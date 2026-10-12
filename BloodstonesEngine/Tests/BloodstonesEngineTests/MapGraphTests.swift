@@ -2,12 +2,13 @@ import Foundation
 import Testing
 @testable import BloodstonesEngine
 
-/// `data/maps/` relative to this file, so tests run against the real map data.
+/// The repo root, found from this file, so tests run against the real data.
+let repoRoot = URL(fileURLWithPath: #filePath)
+    .deletingLastPathComponent().deletingLastPathComponent()
+    .deletingLastPathComponent().deletingLastPathComponent()
+
 func loadMap(_ id: String) throws -> MapGraph {
-    let repo = URL(fileURLWithPath: #filePath)
-        .deletingLastPathComponent().deletingLastPathComponent()
-        .deletingLastPathComponent().deletingLastPathComponent()
-    return try MapGraph(contentsOf: repo.appendingPathComponent("data/maps/\(id).json"))
+    try MapGraph(contentsOf: repoRoot.appendingPathComponent("data/maps/\(id).json"))
 }
 
 @Suite struct MapGraphTests {
