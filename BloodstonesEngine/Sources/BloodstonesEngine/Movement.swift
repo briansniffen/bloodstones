@@ -74,7 +74,7 @@ extension Engine {
 
     /// The pip cost of moving one group of units together, or a reason it
     /// can't be done.
-    func legCost(_ leg: MoveLeg, by f: FactionID, in s: GameState) throws -> Int {
+    public func legCost(_ leg: MoveLeg, by f: FactionID, in s: GameState) throws -> Int {
         let units = try leg.units.map { id -> MapUnit in
             guard let u = s.unit(id), u.faction == f else { throw EngineError("unit \(id) is not yours") }
             return u

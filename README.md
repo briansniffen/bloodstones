@@ -16,6 +16,7 @@ locally from your own copies (see below).
 | `data/maps/` | Map JSON the app loads: regions, terrain, adjacency, polygons. |
 | `source/` | Per-map inputs for the map pipeline (marker positions, frame, terrain, segmentation output). |
 | `tools/mapgen/` | Map extraction pipeline. |
+| `BloodstonesEngine/` | Swift package: the rules engine (`swift test`) and a text-mode player for Mission 1 (`swift run --package-path BloodstonesEngine bloodstones [--seed N]`). |
 | `review/` | `template.html` for the per-map review pages, which `make_review.py` generates into `review/<map>/`. |
 
 ## Map pipeline

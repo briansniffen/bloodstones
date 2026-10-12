@@ -2,7 +2,7 @@ extension Engine {
     /// Each side's bag of Battle tiles.
     static let battleTileValues = [2, 2, 3, 3, 4, 4, 5, 5]
 
-    func force(_ f: FactionID, in b: Battle, _ s: GameState) -> [MapUnit] {
+    public func force(_ f: FactionID, in b: Battle, _ s: GameState) -> [MapUnit] {
         s.units.filter { $0.region == b.region && $0.faction == f }
     }
 
@@ -124,7 +124,7 @@ extension Engine {
     }
 
     /// Top three tiles plus every unit's modifier.
-    func battleTotal(_ f: FactionID, tiles: [Int], in b: Battle, _ s: GameState) -> Int {
+    public func battleTotal(_ f: FactionID, tiles: [Int], in b: Battle, _ s: GameState) -> Int {
         tiles.sorted(by: >).prefix(3).reduce(0, +) + modifiers(f, in: b, s)
     }
 
