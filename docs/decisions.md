@@ -103,3 +103,23 @@ The March map JSON files were not saved and are superseded by `data/maps/`.
   4 pips (the card says they're cheaper); Necromancer shields show 2 blocks
   where every other faction's show 1.
 
+
+## Mission 1: Dragon Hunt
+
+- Routes checked (Claude, 12 Oct 2026): all 21 steps of the three Dragon
+  Rider paths are borders in `tyrants_lament.json`. Each crosses one sea
+  (36, 46, 62) and all end at the player citadel on 61.
+- Hill Folk line (Brian, 12 Oct 2026): the mission's truncated "No faction may
+  attack or move north of" means an east-west line. Regions 1–25 and
+  31–33 are out of the game. The Hill Folk units (ships 26, 34; castles
+  27, 29, 30, 39, 41) cannot be attacked, so nobody may enter their regions
+  either (entering means battle). That leaves 47 regions, all connected,
+  40 of them enterable.
+- Dragons moving onto an undefended village is plain movement; the capture
+  happens at the start of the Dragon Riders' next turn, as usual. (Brian,
+  12 Oct 2026)
+- Dragon Rider hand (Brian, 12 Oct 2026): each drawn activation tile is
+  kept in hand. Ships are built from a ship tile in hand, with any build
+  cost paid by discarding other hand tiles; an army that reaches a sea with
+  no ship in hand waits where it is. Substitutions also come from the hand.
+  No regroup, so the 21-tile bag is the game clock.
