@@ -15,7 +15,7 @@ locally from your own copies (see below).
 | `data/maps/` | Map JSON the app loads: regions, terrain, adjacency, polygons. |
 | `source/` | Per-map inputs for the map pipeline (marker positions, frame, terrain, segmentation output). |
 | `tools/mapgen/` | Map extraction pipeline. |
-| `review/` | The border-review page (published as a claude.ai artifact). |
+| `review/` | `template.html` for the per-map review pages, which `make_review.py` generates into `review/<map>/`. |
 
 ## Map pipeline
 
@@ -36,6 +36,11 @@ glyphs, so the pipeline works from the rendered image:
 6. The owner's rulings are saved in `source/<map>_review.json` and applied by
    `build_map.py`, so a re-run of segmentation never loses them.
 
+Per-map settings in `source/<map>_frame.json`: the playable rectangle, the sea
+regions, and `outside` rectangles for score-track boxes drawn over the map.
+Key-map pages: Tyrant's Lament is Mission 1 p.2 (right half of a spread);
+Swan Dance is Mission 5 p.3 (full page).
+
 ```sh
 tools/mapgen/render_key.sh 01_Solo_Mission_1.pdf 2 right source/tyrants_lament_key.png
 python3 tools/mapgen/segment.py source/tyrants_lament_key.png \
@@ -54,7 +59,7 @@ and poppler's `pdftoppm`.
 | Map | Missions | Regions | Borders | State |
 |---|---|---|---|---|
 | Tyrant's Lament | 1, 2, 3, 4, 9 | 75 | 198 | Reviewed by Brian, Oct 2026 |
-| Swan Dance | 5, 6, 7, 8 | | | Not started |
+| Swan Dance | 5, 6, 7, 8 | 76 | 197 | Traced; borders and terrain awaiting review |
 | Lady of the Lake | 10, 16 | | | Not started |
 | Sorcerer's Crucible | 11, 12, 13, 18 | | | Not started |
 | Remains of the Past | 14, 15, 17 | | | Not started |

@@ -61,3 +61,12 @@ The March map JSON files were not saved and are superseded by `data/maps/`.
   and Brian reviews the short borders on the review page. (Oct 2026)
 - Tyrant's Lament reviewed by Brian (12 Oct 2026): all 16 short borders
   confirmed, sea 1–sea 9 added (segmentation missed it). 198 borders, final.
+- Swan Dance (12 Oct 2026): 197 borders traced. Mission 5 has the only fixed
+  routes on this map: 14 of 15 steps are borders. The 15th, 47 to 42, is
+  marked "(sea)" in the mission text: dragons cross water there, so it is
+  not a border. Terrain is Claude's first reading of the map art, pending
+  Brian's check on the review page.
+- Region 6 on Swan Dance shows through a gap in the score track, and a strip
+  of it runs under the 0-3 boxes above region 8. Score-track boxes are
+  masked per map rather than cropped off.
+

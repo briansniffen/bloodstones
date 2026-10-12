@@ -7,7 +7,7 @@ terrain.json: {"mapId", "displayName", "terrain": {"hills": [ids], ...}}
               Any land id not listed is plains; ids in frame.json "sea" are sea.
 review.json (optional): the map owner's rulings, {"confirmed", "added", "removed"}
               as lists of [a, b]. Added/removed edges override segmentation;
-              confirmed edges come off the review list.
+              confirmed edges come off the review list; "flag" adds edges to it.
 Edges shorter than REVIEW_LEN shared-border pixels are listed for review.
 Coordinates are in pixels of the frame's inner rectangle (origin top-left),
 with its size given in "coordinateSpace".
@@ -72,8 +72,10 @@ def main():
             "polygon": polygon(labels, i),
         })
 
+    flag = {norm(ab) for ab in review.get("flag", [])}
     pending = [[e["a"], e["b"]] for e in edges
-               if e["len"] is not None and e["len"] < REVIEW_LEN and (e["a"], e["b"]) not in confirmed]
+               if ((e["len"] is not None and e["len"] < REVIEW_LEN) or (e["a"], e["b"]) in flag)
+               and (e["a"], e["b"]) not in confirmed]
     out = {
         "mapId": tcfg["mapId"],
         "displayName": tcfg["displayName"],
@@ -82,7 +84,8 @@ def main():
         "regions": regions,
         "provenance": {
             "adjacency": "watershed segmentation of key map, then owner review",
-            "terrain": "annotated by Brian from the physical map",
+            "terrain": tcfg.get("terrainSource", "annotated by Brian from the physical map"),
+            "terrainUncertain": tcfg.get("uncertain", []),
             "reviewEdges": pending,
             "addedByReview": [list(norm(ab)) for ab in review.get("added", [])],
             "removedByReview": [list(norm(ab)) for ab in review.get("removed", [])],

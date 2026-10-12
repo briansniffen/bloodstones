@@ -4,3 +4,4 @@ review/*.jpg
 *.pdf
 __pycache__/
 .DS_Store
+review/*/*.jpg

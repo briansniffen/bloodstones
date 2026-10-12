@@ -7,6 +7,8 @@ markers.json: [{id, cx, cy, r}] for every numbered region (pixel coords).
 frame.json:   {"inner": [x0, y0, x1, y1], "sea": [ids]} -- the playable map
               rectangle (outside = non-region) and, optionally, the sea
               region ids (otherwise guessed from water around each circle).
+              Optional "outside": [[x0, y0, x1, y1], ...] rectangles inside the
+              frame that are not map, e.g. score-track boxes drawn over it.
 
 Method: build a "border cost" image (dark ink lines, thin blue rivers,
 land/sea transitions), then run marker-based watershed from each region's
@@ -88,7 +90,7 @@ def classify_sea(water, markers):
     return sea
 
 
-def segment(img, markers, inner, sea_ids=None):
+def segment(img, markers, inner, sea_ids=None, outside=None):
     """Land regions flood only land pixels and sea regions only open water,
     so a land region can never reach across a strait to another shore."""
     cost, water = border_cost(erase_markers(img, markers))
@@ -97,6 +99,8 @@ def segment(img, markers, inner, sea_ids=None):
     x0, y0, x1, y1 = inner
     inside = np.zeros(water.shape, bool)
     inside[y0:y1, x0:x1] = True
+    for ox0, oy0, ox1, oy1 in outside or []:  # score-track boxes drawn over the map
+        inside[oy0:oy1, ox0:ox1] = False
     # marker circles themselves belong to their own region's medium
     for m in markers:
         c = (int(m["cx"]), int(m["cy"]))
@@ -160,7 +164,8 @@ if __name__ == "__main__":
     cfg = json.load(open(sys.argv[3]))
     inner = cfg["inner"]
     prefix = sys.argv[4]
-    labels, cost, sea_ids = segment(img, markers, inner, set(cfg["sea"]) if "sea" in cfg else None)
+    labels, cost, sea_ids = segment(img, markers, inner, set(cfg["sea"]) if "sea" in cfg else None,
+                                    cfg.get("outside"))
     print("sea regions:", sorted(sea_ids))
     edges = adjacency(labels)
     cv2.imwrite(prefix + "_labels.png", labels.astype(np.uint16))
