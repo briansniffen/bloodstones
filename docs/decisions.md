@@ -64,9 +64,18 @@ The March map JSON files were not saved and are superseded by `data/maps/`.
 - Swan Dance (12 Oct 2026): 197 borders traced. Mission 5 has the only fixed
   routes on this map: 14 of 15 steps are borders. The 15th, 47 to 42, is
   marked "(sea)" in the mission text: dragons cross water there, so it is
-  not a border. Terrain is Claude's first reading of the map art, pending
-  Brian's check on the review page.
+  not a border. Terrain was Claude's reading of the map art.
 - Region 6 on Swan Dance shows through a gap in the score track, and a strip
   of it runs under the 0-3 boxes above region 8. Score-track boxes are
   masked per map rather than cropped off.
+- Swan Dance reviewed by Brian (12 Oct 2026): every traced border and every
+  terrain correct; sea 1–land 10 added. 198 borders, final.
+- Triangle rule (Brian, 12 Oct 2026): every junction is three-way, so every
+  face of the adjacency graph, with the frame as a node, is a triangle. A
+  four-cycle with no diagonal at one junction means a missing border.
+  `quads.py` checks this on every map before review.
+- Both border misses had a cause, now fixed: Swan 1–10 was a four-way corner
+  (caught by the triangle rule); Tyrant's 1–9 was a narrow water channel cut
+  off by a rock, which segmentation gave to the shore. Water pockets now go
+  to a sea within 120 px.
 

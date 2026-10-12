@@ -119,11 +119,23 @@ def segment(img, markers, inner, sea_ids=None, outside=None):
         part = watershed(cost, seeds, mask=medium)
         labels[medium] = part[medium]
 
-    # pixels no seed could reach (islands, lakes): give to the nearest region
+    # pixels no seed could reach (cut-off channels, lakes, islands, frame-edge
+    # slivers). A water pocket within SEA_REACH px of a sea joins that sea, so
+    # a pinched channel between two seas never becomes part of the shore
+    # beside it; everything else goes to its nearest region of any kind.
+    SEA_REACH = 120
     unl = inside & (labels == 0)
     if unl.any():
+        filled = labels.copy()
         _, (iy, ix) = distance_transform_edt(labels == 0, return_indices=True)
-        labels[unl] = labels[iy[unl], ix[unl]]
+        filled[unl] = labels[iy[unl], ix[unl]]
+        sea_px = inside & water & (labels > 0)
+        wpocket = unl & water
+        if wpocket.any() and sea_px.any():
+            ds, (sy, sx) = distance_transform_edt(~sea_px, return_indices=True)
+            take = wpocket & (ds <= SEA_REACH)
+            filled[take] = labels[sy[take], sx[take]]
+        labels = filled
     return labels, cost, sea_ids
 
 

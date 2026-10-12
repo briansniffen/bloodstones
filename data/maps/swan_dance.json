@@ -7,7 +7,7 @@
  },
  "stats": {
   "totalRegions": 76,
-  "adjacencyEdges": 197
+  "adjacencyEdges": 198
  },
  "regions": [
   {
@@ -15,7 +15,8 @@
    "terrain": "sea",
    "adjacentTo": [
     2,
-    9
+    9,
+    10
    ],
    "displayPosition": [
     72.6,
@@ -1073,6 +1074,7 @@
    "id": 10,
    "terrain": "plains",
    "adjacentTo": [
+    1,
     2,
     9,
     11,
@@ -7446,6 +7448,34 @@
     ],
     [
      0,
+     1676
+    ],
+    [
+     11,
+     1669
+    ],
+    [
+     24,
+     1679
+    ],
+    [
+     24,
+     1686
+    ],
+    [
+     16,
+     1695
+    ],
+    [
+     6,
+     1695
+    ],
+    [
+     0,
+     1689
+    ],
+    [
+     0,
      1760
     ],
     [
@@ -10555,86 +10585,18 @@
  ],
  "provenance": {
   "adjacency": "watershed segmentation of key map, then owner review",
-  "terrain": "read from the key-map art by Claude; awaiting Brian's check",
-  "terrainUncertain": [
-   4,
-   66,
-   72
-  ],
-  "reviewEdges": [
+  "terrain": "read from the key-map art by Claude; confirmed by Brian 2026-10-12",
+  "terrainUncertain": [],
+  "reviewEdges": [],
+  "addedByReview": [
    [
-    4,
-    14
-   ],
-   [
-    6,
-    8
-   ],
-   [
-    10,
-    17
-   ],
-   [
-    16,
-    31
-   ],
-   [
-    17,
-    24
-   ],
-   [
-    18,
-    25
-   ],
-   [
-    20,
-    27
-   ],
-   [
-    21,
-    28
-   ],
-   [
-    26,
-    36
-   ],
-   [
-    47,
-    52
-   ],
-   [
-    47,
-    61
-   ],
-   [
-    52,
-    59
-   ],
-   [
-    53,
-    61
-   ],
-   [
-    60,
-    62
-   ],
-   [
-    62,
-    64
-   ],
-   [
-    64,
-    75
-   ],
-   [
-    71,
-    73
+    1,
+    10
    ]
   ],
-  "addedByReview": [],
   "removedByReview": [],
-  "reviewedBy": null,
-  "reviewedOn": null,
-  "status": "draft"
+  "reviewedBy": "Brian",
+  "reviewedOn": "2026-10-12",
+  "status": "reviewed"
  }
 }

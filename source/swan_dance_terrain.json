@@ -1,12 +1,47 @@
 {
  "mapId": "swan_dance",
  "displayName": "Swan Dance",
- "terrainSource": "read from the key-map art by Claude; awaiting Brian's check",
- "uncertain": [4, 66, 72],
+ "terrainSource": "read from the key-map art by Claude; confirmed by Brian 2026-10-12",
+ "uncertain": [],
  "terrain": {
-  "hills": [7, 11, 43, 51, 62],
-  "mountains": [13, 31, 39, 53, 71],
-  "desert": [4, 8, 16, 25, 26, 49, 59],
-  "forest": [2, 5, 17, 20, 28, 29, 37, 46, 57, 60, 63, 64, 72, 76]
+  "hills": [
+   7,
+   11,
+   43,
+   51,
+   62
+  ],
+  "mountains": [
+   13,
+   31,
+   39,
+   53,
+   71
+  ],
+  "desert": [
+   4,
+   8,
+   16,
+   25,
+   26,
+   49,
+   59
+  ],
+  "forest": [
+   2,
+   5,
+   17,
+   20,
+   28,
+   29,
+   37,
+   46,
+   57,
+   60,
+   63,
+   64,
+   72,
+   76
+  ]
  }
 }

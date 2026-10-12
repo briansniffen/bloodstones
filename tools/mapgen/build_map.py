@@ -45,9 +45,9 @@ def main():
     edges = [e for e in edges if (e["a"], e["b"]) not in removed]
     have = {(e["a"], e["b"]) for e in edges}
     for a, b in map(norm, review.get("added", [])):
+        confirmed.add((a, b))  # the owner put it there, so it is confirmed
         if (a, b) not in have:
             edges.append({"a": a, "b": b, "len": None})
-            confirmed.add((a, b))
 
     terrain = {i: "plains" for i in markers}
     for i in frame["sea"]:

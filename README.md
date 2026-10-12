@@ -31,9 +31,14 @@ glyphs, so the pipeline works from the rendered image:
    Two regions are adjacent when their floods share a border.
 4. `build_map.py` merges that with hand-entered terrain into `data/maps/<map>.json`.
    Short shared borders (under 80 px) are listed in `provenance.reviewEdges`.
-5. `edge_sheet.py` makes a contact sheet of doubtful edges cropped from the
+5. `quads.py` applies Brian's triangle rule. Every junction on these maps is
+   three-way, so with the frame counted as one region, every face of the
+   adjacency graph is a triangle. Wherever four regions meet within 25 px with
+   no diagonal between them, a border is missing or the corner went to the
+   wrong side.
+6. `edge_sheet.py` makes a contact sheet of doubtful edges cropped from the
    map, and the review page lets the map owner confirm, rule out, or add borders.
-6. The owner's rulings are saved in `source/<map>_review.json` and applied by
+7. The owner's rulings are saved in `source/<map>_review.json` and applied by
    `build_map.py`, so a re-run of segmentation never loses them.
 
 Per-map settings in `source/<map>_frame.json`: the playable rectangle, the sea
@@ -59,7 +64,7 @@ and poppler's `pdftoppm`.
 | Map | Missions | Regions | Borders | State |
 |---|---|---|---|---|
 | Tyrant's Lament | 1, 2, 3, 4, 9 | 75 | 198 | Reviewed by Brian, Oct 2026 |
-| Swan Dance | 5, 6, 7, 8 | 76 | 197 | Traced; borders and terrain awaiting review |
+| Swan Dance | 5, 6, 7, 8 | 76 | 198 | Reviewed by Brian, Oct 2026 |
 | Lady of the Lake | 10, 16 | | | Not started |
 | Sorcerer's Crucible | 11, 12, 13, 18 | | | Not started |
 | Remains of the Past | 14, 15, 17 | | | Not started |
