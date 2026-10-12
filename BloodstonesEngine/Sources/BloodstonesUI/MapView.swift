@@ -85,6 +85,7 @@ public struct MapView: View {
             let path = shapes.paths[id]!.applying(fit.transform)
             ctx.stroke(path, with: .color(Palette.border.opacity(0.7)), lineWidth: 0.8)
             if highlights[id] == .selected { ctx.stroke(path, with: .color(Palette.selected), lineWidth: 3) }
+            if highlights[id] == .target { ctx.stroke(path, with: .color(.white), lineWidth: 4) }
         }
         // Numbers, costs and pieces.
         let chip = max(13, 30 * fit.scale)
@@ -93,6 +94,11 @@ public struct MapView: View {
             ctx.draw(Text("\(id)").font(.system(size: chip * 0.55, weight: .semibold)).foregroundStyle(.black.opacity(0.55)),
                      at: CGPoint(x: c.x, y: c.y - chip * 0.55))
             switch highlights[id] {
+            case .target:
+                // Pip cost on the target; builds cost tiles, shown in the panel.
+                if let p = model.pending, !p.costsTiles {
+                    badge(&ctx, "\(p.cost)", at: CGPoint(x: c.x + chip * 1.1, y: c.y - chip * 0.6), size: chip * 0.8)
+                }
             case .move(let cost), .village(let cost), .capture(let cost):
                 badge(&ctx, "\(cost)", at: CGPoint(x: c.x + chip * 1.1, y: c.y - chip * 0.6), size: chip * 0.8)
             default: break

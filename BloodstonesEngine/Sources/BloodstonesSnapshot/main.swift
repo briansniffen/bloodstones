@@ -37,6 +37,8 @@ import SwiftUI
     m1.perform(.endPhase)
     m1.tap(61)
     render(m1, to: out.appendingPathComponent("1-move.png"))
+    m1.tap(53)
+    render(m1, to: out.appendingPathComponent("1b-confirm.png"))
 
     // 2. A battle: cavalry into the skirmisher on 52, then fight.
     let m2 = GameModel(engine: data.engine, state: start)
@@ -44,6 +46,7 @@ import SwiftUI
     m2.tap(61)
     for u in m2.selectedUnits where m2.state.unit(u)?.type != .cavalry { m2.toggleUnit(u) }
     m2.tap(52)
+    m2.confirmPending()
     m2.tap(52)
     render(m2, to: out.appendingPathComponent("2-battle.png"))
 

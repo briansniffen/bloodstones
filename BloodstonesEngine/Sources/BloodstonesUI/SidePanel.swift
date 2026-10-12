@@ -28,7 +28,7 @@ struct SidePanel: View {
                 if let message = model.message {
                     Text(message).font(.callout).foregroundStyle(.red)
                 }
-                controls
+                if model.pending != nil { ConfirmStrip(model: model) } else { controls }
                 HandView(model: model)
                 DragonRidersView(model: model)
                 LogView(model: model)
@@ -252,5 +252,66 @@ struct LogView: View {
                 Text(line.text).font(.caption).foregroundStyle(line.text.hasPrefix("—") ? .primary : .secondary)
             }
         }
+    }
+}
+
+/// Shows what a tile-spending action will cost and what will pay for it.
+struct ConfirmStrip: View {
+    let model: GameModel
+
+    var body: some View {
+        if let p = model.pending {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(title(p)).font(.headline)
+                HStack(spacing: 4) {
+                    Text(costText(p))
+                    Text("·").foregroundStyle(.secondary)
+                    Text(paying(p)).foregroundStyle(model.pendingAction == nil ? .red : .primary)
+                }
+                .font(.callout)
+                if let problem = model.pendingProblem {
+                    Text(problem).font(.caption).foregroundStyle(.red)
+                } else {
+                    Text("Tap hand tiles below to change what you spend.").font(.caption).foregroundStyle(.secondary)
+                }
+                HStack {
+                    Button("Confirm") { model.confirmPending() }
+                        .buttonStyle(PanelButtonStyle(prominent: true))
+                        .disabled(model.pendingAction == nil)
+                    Button("Cancel") { model.cancelPending() }
+                        .buttonStyle(PanelButtonStyle())
+                }
+            }
+            .padding(12)
+            .background(RoundedRectangle(cornerRadius: 10).fill(Palette.selected.opacity(0.15)))
+        }
+    }
+
+    private func title(_ p: Pending) -> String {
+        let d = model.describer
+        switch p.kind {
+        case .move(let leg):
+            let from = model.state.unit(leg.units[0])?.region ?? 0
+            let units = leg.units.compactMap { model.state.unit($0) }.map { d.name($0.type) }.joined(separator: ", ")
+            return "Move \(units): \(from) → \(d.region(leg.to))"
+        case .build(let t, let r):
+            let name = model.hand.first { $0.id == t }.map { d.name($0.unit) } ?? "unit"
+            return "Build \(name) in \(d.region(r))"
+        case .capture(let r): return "Capture the village in \(d.region(r))"
+        case .construct(let r): return "Build a village in \(d.region(r))"
+        }
+    }
+
+    private func costText(_ p: Pending) -> String {
+        if case .build = p.kind { return "Costs \(p.cost) tile\(p.cost == 1 ? "" : "s")" }
+        return "Costs \(p.cost) pip\(p.cost == 1 ? "" : "s")"
+    }
+
+    private func paying(_ p: Pending) -> String {
+        let tiles = model.payment.compactMap { id in model.hand.first { $0.id == id } }
+        if tiles.isEmpty { return "nothing picked" }
+        let names = tiles.map { "\(model.describer.name($0.unit)) \($0.pips)" }.joined(separator: " + ")
+        if case .build = p.kind { return "discarding " + names }
+        return "paying " + names + (tiles.count > 1 ? " = \(model.paymentPips)" : "")
     }
 }

@@ -21,8 +21,15 @@ import Testing
         #expect(m.highlights()[61] == .selected)
         #expect(m.highlights()[53] == .move(cost: 6))          // three payers into forest
         m.tap(53)
+        // Nothing spent yet: the move waits for the payment to be confirmed.
+        #expect(m.state.units(in: 53).isEmpty)
+        #expect(m.pending?.cost == 6)
+        #expect(m.highlights()[53] == .target)
+        #expect(m.paymentPips >= 6)
+        m.confirmPending()
         #expect(m.state.units(in: 53).count == 4)
         #expect(m.selectedUnits.isEmpty)
+        #expect(m.pending == nil)
         #expect(m.canUndo)
     }
 
@@ -35,6 +42,8 @@ import Testing
         let blank = try #require(m.hand.first { $0.unit == .blank })
         m.toggleTile(blank.id)
         m.tap(54)
+        #expect(m.payment == [blank.id])                       // the player's pick is kept
+        m.confirmPending()
         #expect(m.state.factions[.horseLords]!.discard.map(\.id) == [blank.id])
     }
 
@@ -53,6 +62,9 @@ import Testing
         m.toggleBuild(ship.id)
         #expect(m.highlights() == [62: .buildSite])
         m.tap(62)
+        #expect(m.pending?.cost == 1)
+        #expect(m.payment.count == 1 && !m.payment.contains(ship.id))
+        m.confirmPending()
         #expect(m.state.units(in: 62).filter { $0.type == .ship }.count == 2)
     }
 
@@ -62,6 +74,7 @@ import Testing
         m.tap(61)
         for u in m.selectedUnits where m.state.unit(u)?.type != .cavalry { m.toggleUnit(u) }
         m.tap(52)                                              // into the skirmisher
+        m.confirmPending()
         #expect(m.highlights()[52] == .battle)
         m.tap(52)                                              // fight
         #expect(m.battle != nil)
@@ -76,10 +89,49 @@ import Testing
         m.perform(.endPhase)                                   // to construct
         #expect(m.highlights()[53] == .village(cost: 1))
         m.tap(53)
+        m.confirmPending()
         let budget = try #require(m.state.pipBudget)
         #expect(m.state.villages(in: 53).count == 1)
         // The smallest tile that covered 1 pip was used.
         #expect(budget == m.state.factions[.horseLords]!.discard[0].pips - 1)
+    }
+
+    @Test func changingThePayment() throws {
+        let m = try makeModel()
+        m.perform(.endPhase)
+        m.tap(61)
+        for u in m.selectedUnits where m.state.unit(u)?.type != .cavalry { m.toggleUnit(u) }
+        m.tap(53)                                              // forest: 2 pips
+        let tiles = m.hand.sorted { $0.pips > $1.pips }
+        m.payment = []
+        #expect(m.pendingAction == nil)
+        #expect(m.pendingProblem != nil)
+        m.toggleTile(tiles[0].id)                              // a 5: enough
+        #expect(m.pendingAction != nil)
+        m.toggleTile(tiles[1].id)                              // and another 5: one is wasted
+        #expect(m.pendingAction == nil)
+        m.cancelPending()
+        #expect(m.pending == nil && m.state.units(in: 53).isEmpty)
+    }
+
+    @Test func villageTilePickReplaces() throws {
+        let m = try makeModel()
+        m.perform(.endPhase)
+        m.perform(.endPhase)
+        m.tap(53)
+        let a = m.hand[0].id, b = m.hand[1].id
+        m.toggleTile(a)
+        m.toggleTile(b)
+        #expect(m.payment == [b])                              // one tile pays for the phase
+        m.confirmPending()
+        // The next village draws on the leftover pips with no confirmation.
+        if let r = m.highlights().first(where: { if case .village = $0.value { true } else { false } })?.key,
+           (m.state.pipBudget ?? 0) >= m.engine.villageCostPublic(r) {
+            let before = m.state.villages.count
+            m.tap(r)
+            #expect(m.state.villages.count == before + 1)
+            #expect(m.pending == nil)
+        }
     }
 
     @Test func undoRestores() throws {

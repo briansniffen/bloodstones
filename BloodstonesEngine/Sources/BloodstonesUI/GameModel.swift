@@ -29,6 +29,30 @@ public enum Highlight: Equatable, Sendable {
     case battle
     case withdraw
     case retreat
+    /// The destination or site of the action waiting for confirmation.
+    case target
+}
+
+/// An action that spends tiles, waiting for the player to confirm the payment.
+public struct Pending: Equatable, Sendable {
+    public enum Kind: Equatable, Sendable {
+        case move(MoveLeg)
+        case build(tile: Int, region: RegionID)
+        case capture(RegionID)
+        case construct(RegionID)
+    }
+    public let kind: Kind
+    /// Pips for moves and villages; a number of tiles for builds.
+    public let cost: Int
+
+    public var costsTiles: Bool { if case .build = kind { true } else { false } }
+
+    public var region: RegionID {
+        switch kind {
+        case .move(let leg): leg.to
+        case .build(_, let r), .capture(let r), .construct(let r): r
+        }
+    }
 }
 
 public struct LogLine: Identifiable, Equatable, Sendable {
@@ -54,6 +78,8 @@ public final class GameModel {
     public var buildTile: Int?
     /// Hand tiles the player picked to pay with, or to substitute in battle.
     public var payment: [Int] = []
+    /// A tile-spending action waiting for the player to confirm what pays.
+    public var pending: Pending?
     /// The last thing that went wrong, for the panel to show.
     public var message: String?
     /// Called after every action, so the app can save.
@@ -110,6 +136,74 @@ public final class GameModel {
         selectedUnits = []
         buildTile = nil
         payment = []
+        pending = nil
+    }
+
+    // MARK: - Confirming payment
+
+    /// The pending action with the payment as it stands, if that's legal.
+    public var pendingAction: Action? {
+        guard let p = pending else { return nil }
+        switch p.kind {
+        case .move(let leg):
+            return paymentCovers(p.cost) ? .move(legs: [leg], payWith: payment) : nil
+        case .build(let t, let r):
+            return payment.count == p.cost && !payment.contains(t) ? .build(tile: t, region: r, payWith: payment) : nil
+        case .capture(let r):
+            return singleTileCovers(p.cost) ? .captureVillage(region: r, payWith: payment[0]) : nil
+        case .construct(let r):
+            return singleTileCovers(p.cost) ? .constructVillage(region: r, payWith: payment[0]) : nil
+        }
+    }
+
+    /// Why the payment as it stands won't do, in words.
+    public var pendingProblem: String? {
+        guard let p = pending, pendingAction == nil else { return nil }
+        switch p.kind {
+        case .move:
+            if paymentPips < p.cost { return "Pick tiles worth at least \(p.cost) pips." }
+            return "One of those tiles isn't needed; drop it."
+        case .build:
+            return "Pick exactly \(p.cost) other tile\(p.cost == 1 ? "" : "s") to discard."
+        case .capture, .construct:
+            return "Pick one tile worth at least \(p.cost) pips; it pays for the whole phase."
+        }
+    }
+
+    public func confirmPending() {
+        if let a = pendingAction { perform(a) }
+    }
+
+    public func cancelPending() {
+        pending = nil
+        payment = []
+    }
+
+    private func singleTileCovers(_ cost: Int) -> Bool {
+        payment.count == 1 && (hand.first { $0.id == payment[0] }?.pips ?? 0) >= cost
+    }
+
+    /// Sets up a confirmation, starting from the player's own picks if they
+    /// already work, else the cheapest payment.
+    private func propose(_ p: Pending) {
+        pending = p
+        switch p.kind {
+        case .move:
+            if !paymentCovers(p.cost) {
+                payment = engine.cheapestPayment(p.cost, from: state.factions[you]!.hand) ?? []
+            }
+        case .build(let t, _):
+            payment.removeAll { $0 == t }
+            if payment.count != p.cost {
+                payment = hand.filter { $0.id != t }.sorted { ($0.pips, $0.id) < ($1.pips, $1.id) }
+                    .prefix(p.cost).map(\.id)
+            }
+        case .capture, .construct:
+            if !singleTileCovers(p.cost) {
+                payment = hand.filter { $0.pips >= p.cost }.sorted { ($0.pips, $0.id) < ($1.pips, $1.id) }
+                    .prefix(1).map(\.id)
+            }
+        }
     }
 
     /// The phase's "done" action, if it's available now.
@@ -118,13 +212,22 @@ public final class GameModel {
     // MARK: - Hand
 
     public func toggleTile(_ id: Int) {
-        if let i = payment.firstIndex(of: id) { payment.remove(at: i) } else { payment.append(id) }
         message = nil
+        switch pending?.kind {
+        case .capture, .construct:
+            // One tile pays for the phase: picking another replaces it.
+            payment = payment == [id] ? [] : [id]
+        case .build(let t, _) where t == id:
+            return
+        default:
+            if let i = payment.firstIndex(of: id) { payment.remove(at: i) } else { payment.append(id) }
+        }
     }
 
     public func toggleBuild(_ id: Int) {
         buildTile = buildTile == id ? nil : id
         selectedUnits = []
+        pending = nil
         payment.removeAll { $0 == id }
     }
 
@@ -196,6 +299,7 @@ public final class GameModel {
             }
         default: break
         }
+        if let p = pending { h[p.region] = .target }
         return h
     }
 
@@ -208,10 +312,8 @@ public final class GameModel {
             return
         }
         switch state.phase {
-        case .capture:
-            if let a = villageAction(at: r, capture: true) { perform(a) }
-        case .construct:
-            if let a = villageAction(at: r, capture: false) { perform(a) }
+        case .capture, .construct:
+            tapVillage(r, capture: state.phase == .capture)
         case .main:
             tapInMain(r)
         default:
@@ -223,20 +325,23 @@ public final class GameModel {
         if let t = buildTile {
             guard let type = unitType(ofTile: t), let cost = hand.first(where: { $0.id == t })?.buildCost,
                   legal.contains(where: { if case .build(let tile, let site, _) = $0 { site == r && unitType(ofTile: tile) == type } else { false } })
-            else { buildTile = nil; return }
-            let chosen = payment.filter { $0 != t }
-            let pay = chosen.count == cost ? chosen
-                : hand.filter { $0.id != t }.sorted { ($0.pips, $0.id) < ($1.pips, $1.id) }.prefix(cost).map(\.id)
-            perform(.build(tile: t, region: r, payWith: pay))
+            else { buildTile = nil; pending = nil; return }
+            if cost == 0 {
+                perform(.build(tile: t, region: r, payWith: []))
+            } else {
+                propose(Pending(kind: .build(tile: t, region: r), cost: cost))
+            }
             return
         }
         if !selectedUnits.isEmpty, r != selectedRegion, let cost = moveCosts[r] {
-            let leg = MoveLeg(units: selectedUnits.sorted(), to: r)
-            let pay = paymentCovers(cost) ? payment : engine.cheapestPayment(cost, from: state.factions[you]!.hand)
-            guard let pay else { message = "Your hand can't pay \(cost) pips."; return }
-            perform(.move(legs: [leg], payWith: pay))
+            guard engine.cheapestPayment(cost, from: state.factions[you]!.hand) != nil else {
+                message = "Your hand can't pay \(cost) pips."
+                return
+            }
+            propose(Pending(kind: .move(MoveLeg(units: selectedUnits.sorted(), to: r)), cost: cost))
             return
         }
+        pending = nil
         if legal.contains(.battle(region: r)) && selectedRegion != r {
             perform(.battle(region: r))
             return
@@ -258,27 +363,21 @@ public final class GameModel {
         return pips.reduce(0, +) >= cost && pips.reduce(0, +) - pips.min()! < cost
     }
 
-    /// Capture or construct at `r`: from the phase's remaining pips, the one
-    /// tile the player picked, or else the smallest tile that covers it.
-    private func villageAction(at r: RegionID, capture: Bool) -> Action? {
-        let options = legal.filter {
+    /// Capture or construct at `r`. With pips left from this phase's tile
+    /// it just happens; otherwise the player confirms which tile to spend.
+    private func tapVillage(_ r: RegionID, capture: Bool) {
+        let fromBudget: Action = capture ? .captureVillage(region: r, payWith: nil) : .constructVillage(region: r, payWith: nil)
+        if legal.contains(fromBudget) { perform(fromBudget); return }
+        let available = legal.contains {
             switch $0 {
             case .captureVillage(let x, _): capture && x == r
             case .constructVillage(let x, _): !capture && x == r
             default: false
             }
         }
-        func make(_ pay: Int?) -> Action { capture ? .captureVillage(region: r, payWith: pay) : .constructVillage(region: r, payWith: pay) }
-        if options.contains(make(nil)) { return make(nil) }
-        if payment.count == 1, options.contains(make(payment[0])) { return make(payment[0]) }
-        let byPips = options.compactMap { a -> (Int, Int)? in
-            switch a {
-            case .captureVillage(_, let p?), .constructVillage(_, let p?):
-                hand.first { $0.id == p }.map { ($0.pips, $0.id) }
-            default: nil
-            }
-        }.sorted { $0 < $1 }
-        return byPips.first.map { make($0.1) }
+        guard available else { pending = nil; return }
+        let cost = engine.villageCostPublic(r)
+        propose(Pending(kind: capture ? .capture(r) : .construct(r), cost: cost))
     }
 
     // MARK: - Battle

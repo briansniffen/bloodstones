@@ -37,6 +37,7 @@ enum Palette {
         case .buildSite, .village, .capture: Color(red: 0.1, green: 0.5, blue: 1.0).opacity(0.38)
         case .battle: Color(red: 1.0, green: 0.15, blue: 0.1).opacity(0.45)
         case .withdraw, .retreat: Color(red: 1.0, green: 0.6, blue: 0.0).opacity(0.45)
+        case .target: Color.white.opacity(0.45)
         }
     }
 
