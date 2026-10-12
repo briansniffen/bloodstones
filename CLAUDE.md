@@ -53,6 +53,14 @@ landscape only, fully offline.
   provenance: {...} }                    // how it was made and checked
 ```
 
+## Faction tiles
+
+`data/factions.json` lists every faction's 36-tile bag: count, build cost
+(stone blocks; null means it can't be built), pip value and battle bonus with
+its condition, plus the citadel and special powers. It was transcribed
+from the faction cards (rulebook pp. 24–26); each bag sums to 36 tiles. Edit
+`tools/factions_src.py` and regenerate rather than hand-editing the JSON.
+
 Missions → maps: Tyrant's Lament 1–4, 9 · Swan Dance 5–8 · Lady of the
 Lake 10, 16 · Sorcerer's Crucible 11–13, 18 · Remains of the Past 14, 15, 17.
 

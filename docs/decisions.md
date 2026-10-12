@@ -91,3 +91,15 @@ The March map JSON files were not saved and are superseded by `data/maps/`.
   mouth of a water inlet. The faces around it close as triangles through
   sea 97 without it.
 
+## Faction tiles
+
+- `data/factions.json` was transcribed from the faction cards (rulebook
+  pp. 24–26) by Claude on 12 Oct 2026. Every bag sums to 36 tiles;
+  Necromancers' 4 Undead are kept aside, outside the bag.
+- The March spec's "Dragon Riders: 20 Lizardmen" was wrong. The 20 on every
+  card is villages; Dragon Riders have 4 Lizardmen.
+- Three cost differences printed on the cards: Hill Folk castles cost 1 block
+  (the card says they're cheaper); Chaos Horde cavalry cost 1 block and show
+  4 pips (the card says they're cheaper); Necromancer shields show 2 blocks
+  where every other faction's show 1.
+

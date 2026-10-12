@@ -1,0 +1,570 @@
+{
+ "source": "Bloodstones rulebook faction cards, pp. 24-26; transcribed by Claude 2026-10-12, awaiting Brian's check against the physical tiles",
+ "everyFactionAlsoHas": "1 victory-point marker and 1 regroup marker (the two round tokens on each card)",
+ "factions": [
+  {
+   "faction": "dragonRiders",
+   "name": "Dragon Riders",
+   "handSize": 6,
+   "villages": 20,
+   "citadel": {
+    "battleBonus": 5,
+    "bonusWhen": "defending"
+   },
+   "tiles": [
+    {
+     "unit": "skirmishers",
+     "count": 4,
+     "buildCost": 0,
+     "pips": 2,
+     "battleBonus": 1,
+     "bonusWhen": "inForest"
+    },
+    {
+     "unit": "swords",
+     "count": 4,
+     "buildCost": 1,
+     "pips": 4,
+     "battleBonus": 1,
+     "bonusWhen": "always"
+    },
+    {
+     "unit": "shield",
+     "count": 4,
+     "buildCost": 1,
+     "pips": 3,
+     "battleBonus": 1,
+     "bonusWhen": "defending",
+     "winsTiesDefending": true
+    },
+    {
+     "unit": "cavalry",
+     "count": 4,
+     "buildCost": 2,
+     "pips": 3,
+     "battleBonus": 1,
+     "bonusWhen": "inPlains"
+    },
+    {
+     "unit": "lizardmen",
+     "count": 4,
+     "buildCost": 0,
+     "pips": 2,
+     "battleBonus": 1,
+     "bonusWhen": "attacking",
+     "mayRemainInDesert": true
+    },
+    {
+     "unit": "siegeEngine",
+     "count": 2,
+     "buildCost": 1,
+     "pips": 3,
+     "battleBonus": 2,
+     "bonusWhen": "vsCastleOrCitadel"
+    },
+    {
+     "unit": "leader",
+     "count": 1,
+     "buildCost": 2,
+     "pips": 5,
+     "battleBonus": 1,
+     "bonusWhen": "always",
+     "movesOneExtraUnitFree": true
+    },
+    {
+     "unit": "ship",
+     "count": 5,
+     "buildCost": 1,
+     "pips": 4,
+     "battleBonus": 1,
+     "bonusWhen": "always",
+     "carriesLandUnitsAcrossSea": true
+    },
+    {
+     "unit": "castle",
+     "count": 4,
+     "buildCost": 2,
+     "pips": 4,
+     "battleBonus": 3,
+     "bonusWhen": "defending",
+     "immobile": true
+    },
+    {
+     "unit": "dragon",
+     "count": 2,
+     "buildCost": 2,
+     "pips": 5,
+     "battleBonus": 4,
+     "bonusWhen": "always",
+     "special": "dragon"
+    },
+    {
+     "unit": "blank",
+     "count": 2,
+     "buildCost": null,
+     "pips": 5,
+     "battleBonus": 0,
+     "bonusWhen": null
+    }
+   ],
+   "notes": [
+    "Dragon: if part of a successful attack it goes to the discard pile. A force with dragons can withdraw (unless defending castles/citadel); no opposing force can withdraw from dragons. 1 pip to enter any terrain, including mountains. May remain in desert, mountains and sea."
+   ]
+  },
+  {
+   "faction": "horseLords",
+   "name": "Horse Lords",
+   "handSize": 7,
+   "villages": 20,
+   "citadel": {
+    "battleBonus": 5,
+    "bonusWhen": "defending"
+   },
+   "tiles": [
+    {
+     "unit": "skirmishers",
+     "count": 4,
+     "buildCost": 0,
+     "pips": 2,
+     "battleBonus": 1,
+     "bonusWhen": "inForest"
+    },
+    {
+     "unit": "swords",
+     "count": 6,
+     "buildCost": 1,
+     "pips": 4,
+     "battleBonus": 1,
+     "bonusWhen": "always"
+    },
+    {
+     "unit": "shield",
+     "count": 4,
+     "buildCost": 1,
+     "pips": 3,
+     "battleBonus": 1,
+     "bonusWhen": "defending",
+     "winsTiesDefending": true
+    },
+    {
+     "unit": "cavalry",
+     "count": 6,
+     "buildCost": 2,
+     "pips": 3,
+     "battleBonus": 1,
+     "bonusWhen": "inPlains"
+    },
+    {
+     "unit": "siegeEngine",
+     "count": 2,
+     "buildCost": 1,
+     "pips": 3,
+     "battleBonus": 2,
+     "bonusWhen": "vsCastleOrCitadel"
+    },
+    {
+     "unit": "castle",
+     "count": 4,
+     "buildCost": 2,
+     "pips": 4,
+     "battleBonus": 3,
+     "bonusWhen": "defending",
+     "immobile": true
+    },
+    {
+     "unit": "leader",
+     "count": 2,
+     "buildCost": 2,
+     "pips": 5,
+     "battleBonus": 1,
+     "bonusWhen": "always",
+     "movesOneExtraUnitFree": true
+    },
+    {
+     "unit": "ship",
+     "count": 5,
+     "buildCost": 1,
+     "pips": 4,
+     "battleBonus": 1,
+     "bonusWhen": "always",
+     "carriesLandUnitsAcrossSea": true
+    },
+    {
+     "unit": "blank",
+     "count": 3,
+     "buildCost": null,
+     "pips": 5,
+     "battleBonus": 0,
+     "bonusWhen": null
+    }
+   ],
+   "notes": [
+    "Special power: hand size of seven tiles."
+   ]
+  },
+  {
+   "faction": "necromancers",
+   "name": "Necromancers",
+   "handSize": 6,
+   "villages": 20,
+   "citadel": {
+    "battleBonus": 5,
+    "bonusWhen": "defending"
+   },
+   "tiles": [
+    {
+     "unit": "skirmishers",
+     "count": 4,
+     "buildCost": 0,
+     "pips": 2,
+     "battleBonus": 1,
+     "bonusWhen": "inForest"
+    },
+    {
+     "unit": "swords",
+     "count": 2,
+     "buildCost": 1,
+     "pips": 4,
+     "battleBonus": 1,
+     "bonusWhen": "always"
+    },
+    {
+     "unit": "shield",
+     "count": 2,
+     "buildCost": 2,
+     "pips": 3,
+     "battleBonus": 1,
+     "bonusWhen": "defending",
+     "winsTiesDefending": true
+    },
+    {
+     "unit": "cavalry",
+     "count": 4,
+     "buildCost": 2,
+     "pips": 3,
+     "battleBonus": 1,
+     "bonusWhen": "inPlains"
+    },
+    {
+     "unit": "goblins",
+     "count": 8,
+     "buildCost": 0,
+     "pips": 3,
+     "battleBonus": 1,
+     "bonusWhen": "attacking",
+     "mayRemainInDesert": true
+    },
+    {
+     "unit": "siegeEngine",
+     "count": 2,
+     "buildCost": 1,
+     "pips": 3,
+     "battleBonus": 2,
+     "bonusWhen": "vsCastleOrCitadel"
+    },
+    {
+     "unit": "leader",
+     "count": 1,
+     "buildCost": 2,
+     "pips": 5,
+     "battleBonus": 1,
+     "bonusWhen": "always",
+     "movesOneExtraUnitFree": true
+    },
+    {
+     "unit": "ship",
+     "count": 5,
+     "buildCost": 1,
+     "pips": 4,
+     "battleBonus": 1,
+     "bonusWhen": "always",
+     "carriesLandUnitsAcrossSea": true
+    },
+    {
+     "unit": "castle",
+     "count": 4,
+     "buildCost": 2,
+     "pips": 4,
+     "battleBonus": 3,
+     "bonusWhen": "defending",
+     "immobile": true
+    },
+    {
+     "unit": "necromancer",
+     "count": 4,
+     "buildCost": 2,
+     "pips": 5,
+     "battleBonus": 1,
+     "bonusWhen": "always",
+     "special": "necromancer"
+    }
+   ],
+   "asideTiles": [
+    {
+     "unit": "undead",
+     "count": 4,
+     "buildCost": null,
+     "pips": 0,
+     "battleBonus": 1,
+     "bonusWhen": "always",
+     "special": "undead"
+    }
+   ],
+   "notes": [
+    "Necromancer: if one or more are in a winning battle, may replace each eliminated enemy unit with one Undead.",
+    "Undead are kept aside, not in the bag. They move up to two areas in the Move Undead phase only, ignore terrain costs, can enter mountains, remain in deserts, and can move by sea using ships.",
+    "Necromancer Shield shows two build blocks, unlike every other faction's one."
+   ]
+  },
+  {
+   "faction": "hillFolk",
+   "name": "Hill Folk",
+   "handSize": 6,
+   "villages": 20,
+   "citadel": {
+    "battleBonus": 5,
+    "bonusWhen": "defending"
+   },
+   "tiles": [
+    {
+     "unit": "skirmishers",
+     "count": 4,
+     "buildCost": 0,
+     "pips": 2,
+     "battleBonus": 1,
+     "bonusWhen": "inForest"
+    },
+    {
+     "unit": "swords",
+     "count": 2,
+     "buildCost": 1,
+     "pips": 4,
+     "battleBonus": 1,
+     "bonusWhen": "always"
+    },
+    {
+     "unit": "shield",
+     "count": 4,
+     "buildCost": 1,
+     "pips": 3,
+     "battleBonus": 1,
+     "bonusWhen": "defending",
+     "winsTiesDefending": true
+    },
+    {
+     "unit": "cavalry",
+     "count": 4,
+     "buildCost": 2,
+     "pips": 3,
+     "battleBonus": 1,
+     "bonusWhen": "inPlains"
+    },
+    {
+     "unit": "reivers",
+     "count": 4,
+     "buildCost": 0,
+     "pips": 2,
+     "battleBonus": 1,
+     "bonusWhen": "attacking"
+    },
+    {
+     "unit": "siegeEngine",
+     "count": 2,
+     "buildCost": 1,
+     "pips": 3,
+     "battleBonus": 2,
+     "bonusWhen": "vsCastleOrCitadel"
+    },
+    {
+     "unit": "leader",
+     "count": 1,
+     "buildCost": 2,
+     "pips": 5,
+     "battleBonus": 1,
+     "bonusWhen": "always",
+     "movesOneExtraUnitFree": true
+    },
+    {
+     "unit": "ship",
+     "count": 5,
+     "buildCost": 1,
+     "pips": 4,
+     "battleBonus": 1,
+     "bonusWhen": "always",
+     "carriesLandUnitsAcrossSea": true
+    },
+    {
+     "unit": "castle",
+     "count": 6,
+     "buildCost": 1,
+     "pips": 4,
+     "battleBonus": 3,
+     "bonusWhen": "defending",
+     "immobile": true
+    },
+    {
+     "unit": "giant",
+     "count": 2,
+     "buildCost": 2,
+     "pips": 5,
+     "battleBonus": 2,
+     "bonusWhen": "always",
+     "alwaysDrawFourInBattle": true
+    },
+    {
+     "unit": "blank",
+     "count": 2,
+     "buildCost": null,
+     "pips": 5,
+     "battleBonus": 0,
+     "bonusWhen": null
+    }
+   ],
+   "notes": [
+    "Castles cost one block, not two.",
+    "Faction power (rulebook): moving into hills costs two pips."
+   ]
+  },
+  {
+   "faction": "chaosHorde",
+   "name": "Chaos Horde",
+   "handSize": 6,
+   "villages": 0,
+   "citadel": null,
+   "startingVP": 10,
+   "vpPerCapturedVillage": 2,
+   "tiles": [
+    {
+     "unit": "cavalry",
+     "count": 10,
+     "buildCost": 1,
+     "pips": 4,
+     "battleBonus": 1,
+     "bonusWhen": "inPlains"
+    },
+    {
+     "unit": "hordes",
+     "count": 20,
+     "buildCost": 0,
+     "pips": 3,
+     "battleBonus": 1,
+     "bonusWhen": "attacking"
+    },
+    {
+     "unit": "leader",
+     "count": 2,
+     "buildCost": 2,
+     "pips": 5,
+     "battleBonus": 1,
+     "bonusWhen": "always",
+     "movesOneExtraUnitFree": true
+    },
+    {
+     "unit": "ship",
+     "count": 2,
+     "buildCost": 1,
+     "pips": 4,
+     "battleBonus": 1,
+     "bonusWhen": "always",
+     "carriesLandUnitsAcrossSea": true
+    },
+    {
+     "unit": "blank",
+     "count": 2,
+     "buildCost": null,
+     "pips": 5,
+     "battleBonus": 0,
+     "bonusWhen": null
+    }
+   ],
+   "notes": [
+    "Places initial units after all citadels are placed. Builds where it already has units; ships adjacent to land units and vice versa.",
+    "Captures villages as one Core Action (once per turn, at most one tile spent) instead of in the Capture Villages phase. Scores 2 VP per captured village at game end.",
+    "Cavalry cost one block and show four pips."
+   ]
+  },
+  {
+   "faction": "corsairs",
+   "name": "Corsairs",
+   "handSize": 6,
+   "villages": 20,
+   "citadel": {
+    "battleBonus": 5,
+    "bonusWhen": "defending"
+   },
+   "tiles": [
+    {
+     "unit": "skirmishers",
+     "count": 4,
+     "buildCost": 0,
+     "pips": 2,
+     "battleBonus": 1,
+     "bonusWhen": "inForest"
+    },
+    {
+     "unit": "axes",
+     "count": 12,
+     "buildCost": 1,
+     "pips": 4,
+     "battleBonus": 1,
+     "bonusWhen": "always"
+    },
+    {
+     "unit": "shield",
+     "count": 4,
+     "buildCost": 1,
+     "pips": 3,
+     "battleBonus": 1,
+     "bonusWhen": "defending",
+     "winsTiesDefending": true
+    },
+    {
+     "unit": "siegeEngine",
+     "count": 1,
+     "buildCost": 1,
+     "pips": 3,
+     "battleBonus": 2,
+     "bonusWhen": "vsCastleOrCitadel"
+    },
+    {
+     "unit": "castle",
+     "count": 2,
+     "buildCost": 2,
+     "pips": 4,
+     "battleBonus": 3,
+     "bonusWhen": "defending",
+     "immobile": true
+    },
+    {
+     "unit": "leader",
+     "count": 1,
+     "buildCost": 2,
+     "pips": 5,
+     "battleBonus": 1,
+     "bonusWhen": "always",
+     "movesOneExtraUnitFree": true
+    },
+    {
+     "unit": "ship",
+     "count": 8,
+     "buildCost": 1,
+     "pips": 4,
+     "battleBonus": 1,
+     "bonusWhen": "always",
+     "carriesLandUnitsAcrossSea": true
+    },
+    {
+     "unit": "blank",
+     "count": 4,
+     "buildCost": null,
+     "pips": 5,
+     "battleBonus": 0,
+     "bonusWhen": null
+    }
+   ],
+   "notes": [
+    "+1 when fighting at sea. Land units can retreat by sea when defending (except from dragons). When attacking adjacent to one of their ships, defenders can only retreat with cavalry or dragons present. May substitute a battle tile after the other side reveals. +1 VP for winning a battle."
+   ]
+  }
+ ]
+}
