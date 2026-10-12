@@ -17,6 +17,7 @@ locally from your own copies (see below).
 | `source/` | Per-map inputs for the map pipeline (marker positions, frame, terrain, segmentation output). |
 | `tools/mapgen/` | Map extraction pipeline. |
 | `BloodstonesEngine/` | Swift package: the rules engine (`swift test`) and a text-mode player for Mission 1 (`swift run --package-path BloodstonesEngine bloodstones [--seed N]`). |
+| `App/` | Xcode project for the iPad app (iPadOS 17, landscape, SwiftData). Open `App/Bloodstones.xcodeproj`; the screens live in the package's `BloodstonesUI` library, and `swift run --package-path BloodstonesEngine BloodstonesSnapshot <dir>` renders them to PNGs on a Mac. |
 | `review/` | `template.html` for the per-map review pages, which `make_review.py` generates into `review/<map>/`. |
 
 ## Map pipeline

@@ -1,0 +1,261 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		B50000000000000000000001 /* BloodstonesUI in Frameworks */ = {isa = PBXBuildFile; productRef = B50000000000000000000010 /* BloodstonesUI */; };
+		B50000000000000000000002 /* data in Resources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000003 /* data */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		B50000000000000000000004 /* Bloodstones.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Bloodstones.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B50000000000000000000003 /* data */ = {isa = PBXFileReference; lastKnownFileType = folder; name = data; path = ../data; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		B50000000000000000000005 /* Bloodstones */ = {isa = PBXFileSystemSynchronizedRootGroup; path = Bloodstones; sourceTree = "<group>"; };
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		B50000000000000000000006 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B50000000000000000000001 /* BloodstonesUI in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		B50000000000000000000007 = {
+			isa = PBXGroup;
+			children = (
+				B50000000000000000000005 /* Bloodstones */,
+				B50000000000000000000003 /* data */,
+				B50000000000000000000008 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		B50000000000000000000008 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				B50000000000000000000004 /* Bloodstones.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		B50000000000000000000009 /* Bloodstones */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B5000000000000000000000A /* Build configuration list for PBXNativeTarget "Bloodstones" */;
+			buildPhases = (
+				B5000000000000000000000E /* Sources */,
+				B50000000000000000000006 /* Frameworks */,
+				B5000000000000000000000D /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				B50000000000000000000005 /* Bloodstones */,
+			);
+			name = Bloodstones;
+			packageProductDependencies = (
+				B50000000000000000000010 /* BloodstonesUI */,
+			);
+			productName = Bloodstones;
+			productReference = B50000000000000000000004 /* Bloodstones.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		B5000000000000000000000C /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2700;
+				LastUpgradeCheck = 2700;
+				TargetAttributes = {
+					B50000000000000000000009 = {
+						CreatedOnToolsVersion = 27.0;
+					};
+				};
+			};
+			buildConfigurationList = B5000000000000000000000B /* Build configuration list for PBXProject "Bloodstones" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = B50000000000000000000007;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				B5000000000000000000000F /* XCLocalSwiftPackageReference "../BloodstonesEngine" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = B50000000000000000000008 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				B50000000000000000000009 /* Bloodstones */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		B5000000000000000000000D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B50000000000000000000002 /* data in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		B5000000000000000000000E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		B50000000000000000000011 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				COPY_PHASE_STRIP = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_TESTABILITY = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		B50000000000000000000012 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				COPY_PHASE_STRIP = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		B50000000000000000000013 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Bloodstones;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UIRequiresFullScreen = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.briansniffen.bloodstones;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTS_MACCATALYST = NO;
+				TARGETED_DEVICE_FAMILY = 2;
+			};
+			name = Debug;
+		};
+		B50000000000000000000014 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Bloodstones;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UIRequiresFullScreen = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.briansniffen.bloodstones;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTS_MACCATALYST = NO;
+				TARGETED_DEVICE_FAMILY = 2;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		B5000000000000000000000B /* Build configuration list for PBXProject "Bloodstones" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B50000000000000000000011 /* Debug */,
+				B50000000000000000000012 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		B5000000000000000000000A /* Build configuration list for PBXNativeTarget "Bloodstones" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B50000000000000000000013 /* Debug */,
+				B50000000000000000000014 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		B5000000000000000000000F /* XCLocalSwiftPackageReference "../BloodstonesEngine" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../BloodstonesEngine;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		B50000000000000000000010 /* BloodstonesUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = BloodstonesUI;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = B5000000000000000000000C /* Project object */;
+}
