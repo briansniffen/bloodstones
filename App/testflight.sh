@@ -29,7 +29,7 @@ cat > "$OUT/ExportOptions.plist" <<PLIST
 </plist>
 PLIST
 
-echo "Archiving build $BUILD for team $TEAM…"
+echo "Archiving build ${BUILD} for team ${TEAM}…"
 xcodebuild -project Bloodstones.xcodeproj -scheme Bloodstones -configuration Release \
     -destination 'generic/platform=iOS' -archivePath "$OUT/Bloodstones.xcarchive" \
     DEVELOPMENT_TEAM="$TEAM" CURRENT_PROJECT_VERSION="$BUILD" \
