@@ -7,7 +7,7 @@
  },
  "stats": {
   "totalRegions": 75,
-  "adjacencyEdges": 197
+  "adjacencyEdges": 198
  },
  "regions": [
   {
@@ -15,7 +15,8 @@
    "terrain": "sea",
    "adjacentTo": [
     2,
-    3
+    3,
+    9
    ],
    "displayPosition": [
     142.7,
@@ -1006,6 +1007,7 @@
    "id": 9,
    "terrain": "sea",
    "adjacentTo": [
+    1,
     2,
     10,
     11,
@@ -11130,74 +11132,18 @@
   }
  ],
  "provenance": {
-  "adjacency": "watershed segmentation of key map; unreviewed edges flagged",
+  "adjacency": "watershed segmentation of key map, then owner review",
   "terrain": "annotated by Brian from the physical map",
-  "reviewEdges": [
+  "reviewEdges": [],
+  "addedByReview": [
    [
-    4,
-    14
-   ],
-   [
-    7,
-    18
-   ],
-   [
-    9,
-    19
-   ],
-   [
-    11,
-    20
-   ],
-   [
-    14,
-    20
-   ],
-   [
-    25,
-    34
-   ],
-   [
-    30,
-    37
-   ],
-   [
-    31,
-    32
-   ],
-   [
-    32,
-    39
-   ],
-   [
-    42,
-    50
-   ],
-   [
-    48,
-    56
-   ],
-   [
-    50,
-    58
-   ],
-   [
-    54,
-    62
-   ],
-   [
-    56,
-    64
-   ],
-   [
-    56,
-    67
-   ],
-   [
-    59,
-    69
+    1,
+    9
    ]
   ],
-  "status": "draft"
+  "removedByReview": [],
+  "reviewedBy": "Brian",
+  "reviewedOn": "2026-10-12",
+  "status": "reviewed"
  }
 }

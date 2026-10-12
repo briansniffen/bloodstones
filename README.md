@@ -33,6 +33,8 @@ glyphs, so the pipeline works from the rendered image:
    Short shared borders (under 80 px) are listed in `provenance.reviewEdges`.
 5. `edge_sheet.py` makes a contact sheet of doubtful edges cropped from the
    map, and the review page lets the map owner confirm, rule out, or add borders.
+6. The owner's rulings are saved in `source/<map>_review.json` and applied by
+   `build_map.py`, so a re-run of segmentation never loses them.
 
 ```sh
 tools/mapgen/render_key.sh 01_Solo_Mission_1.pdf 2 right source/tyrants_lament_key.png
@@ -41,7 +43,7 @@ python3 tools/mapgen/segment.py source/tyrants_lament_key.png \
 python3 tools/mapgen/build_map.py source/tyrants_lament_key.png \
   source/tyrants_lament_markers.json source/tyrants_lament_frame.json \
   source/tyrants_lament_terrain.json /tmp/tl_labels.png /tmp/tl_edges.json \
-  data/maps/tyrants_lament.json
+  data/maps/tyrants_lament.json source/tyrants_lament_review.json
 ```
 
 Needs Python 3 with `opencv-python`, `numpy`, `scipy`, `scikit-image`, `Pillow`,
@@ -51,7 +53,7 @@ and poppler's `pdftoppm`.
 
 | Map | Missions | Regions | Borders | State |
 |---|---|---|---|---|
-| Tyrant's Lament | 1, 2, 3, 4, 9 | 75 | 197 | Traced; awaiting review |
+| Tyrant's Lament | 1, 2, 3, 4, 9 | 75 | 198 | Reviewed by Brian, Oct 2026 |
 | Swan Dance | 5, 6, 7, 8 | | | Not started |
 | Lady of the Lake | 10, 16 | | | Not started |
 | Sorcerer's Crucible | 11, 12, 13, 18 | | | Not started |

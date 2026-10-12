@@ -1,11 +1,14 @@
 """Assemble the app's map JSON from segmentation output plus hand-entered data.
 
 Usage:
-  python build_map.py map.png markers.json frame.json terrain.json labels.png edges.json out.json
+  python build_map.py map.png markers.json frame.json terrain.json labels.png edges.json out.json [review.json]
 
 terrain.json: {"mapId", "displayName", "terrain": {"hills": [ids], ...}}
               Any land id not listed is plains; ids in frame.json "sea" are sea.
-Edges shorter than REVIEW_LEN shared-border pixels are marked "review": true.
+review.json (optional): the map owner's rulings, {"confirmed", "added", "removed"}
+              as lists of [a, b]. Added/removed edges override segmentation;
+              confirmed edges come off the review list.
+Edges shorter than REVIEW_LEN shared-border pixels are listed for review.
 Coordinates are in pixels of the frame's inner rectangle (origin top-left),
 with its size given in "coordinateSpace".
 """
@@ -35,6 +38,16 @@ def main():
     x0, y0, x1, y1 = frame["inner"]
     labels = cv2.imread(labels_p, -1).astype(np.int32)[y0:y1, x0:x1]
     edges = [e for e in json.load(open(edges_p)) if e["len"] >= MIN_LEN]
+    review = json.load(open(sys.argv[8])) if len(sys.argv) > 8 else {}
+    norm = lambda ab: tuple(sorted(ab))
+    removed = {norm(ab) for ab in review.get("removed", [])}
+    confirmed = {norm(ab) for ab in review.get("confirmed", [])}
+    edges = [e for e in edges if (e["a"], e["b"]) not in removed]
+    have = {(e["a"], e["b"]) for e in edges}
+    for a, b in map(norm, review.get("added", [])):
+        if (a, b) not in have:
+            edges.append({"a": a, "b": b, "len": None})
+            confirmed.add((a, b))
 
     terrain = {i: "plains" for i in markers}
     for i in frame["sea"]:
@@ -59,6 +72,8 @@ def main():
             "polygon": polygon(labels, i),
         })
 
+    pending = [[e["a"], e["b"]] for e in edges
+               if e["len"] is not None and e["len"] < REVIEW_LEN and (e["a"], e["b"]) not in confirmed]
     out = {
         "mapId": tcfg["mapId"],
         "displayName": tcfg["displayName"],
@@ -66,10 +81,14 @@ def main():
         "stats": {"totalRegions": len(regions), "adjacencyEdges": len(edges)},
         "regions": regions,
         "provenance": {
-            "adjacency": "watershed segmentation of key map; unreviewed edges flagged",
+            "adjacency": "watershed segmentation of key map, then owner review",
             "terrain": "annotated by Brian from the physical map",
-            "reviewEdges": [[e["a"], e["b"]] for e in edges if e["len"] < REVIEW_LEN],
-            "status": "draft",
+            "reviewEdges": pending,
+            "addedByReview": [list(norm(ab)) for ab in review.get("added", [])],
+            "removedByReview": [list(norm(ab)) for ab in review.get("removed", [])],
+            "reviewedBy": review.get("reviewedBy"),
+            "reviewedOn": review.get("reviewedOn"),
+            "status": "reviewed" if review and not pending else "draft",
         },
     }
     json.dump(out, open(out_p, "w"), indent=1)

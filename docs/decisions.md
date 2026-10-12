@@ -59,3 +59,5 @@ The March map JSON files were not saved and are superseded by `data/maps/`.
 - Adjacency is extracted by segmentation and checked two ways: every step of
   every fixed army route in Missions 1, 3 and 4 (45 pairs) must be an edge,
   and Brian reviews the short borders on the review page. (Oct 2026)
+- Tyrant's Lament reviewed by Brian (12 Oct 2026): all 16 short borders
+  confirmed, sea 1–sea 9 added (segmentation missed it). 198 borders, final.
