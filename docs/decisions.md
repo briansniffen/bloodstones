@@ -7,7 +7,7 @@ from him, the project owner. Newest at the bottom of each section.
 
 The tech spec (v0.2+, March 2026) was written in a claude.ai chat and merged
 with Brian's own edited copy (`bloodstones-ipad-techspec.md`). Brian's local
-copy is the source of truth; it should be committed here as `docs/tech-spec.md`.
+copy has since been lost (Oct 2026), so this file is the record.
 The March map JSON files were not saved and are superseded by `data/maps/`.
 
 ## Platform

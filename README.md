@@ -11,7 +11,8 @@ locally from your own copies (see below).
 
 | Path | What |
 |---|---|
-| `docs/` | Decisions log and plan. The full tech spec lives with Brian (see `docs/decisions.md`). |
+| `CLAUDE.md` | Orientation for Claude Code sessions: status, next task, map schema. |
+| `docs/` | Decisions log. The March tech spec was lost; decisions.md is the record. |
 | `data/maps/` | Map JSON the app loads: regions, terrain, adjacency, polygons. |
 | `source/` | Per-map inputs for the map pipeline (marker positions, frame, terrain, segmentation output). |
 | `tools/mapgen/` | Map extraction pipeline. |

@@ -5,3 +5,4 @@ review/*.jpg
 __pycache__/
 .DS_Store
 review/*/*.jpg
+pdfs/
