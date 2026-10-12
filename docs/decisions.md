@@ -126,6 +126,11 @@ The March map JSON files were not saved and are superseded by `data/maps/`.
 
 ## Engine rules calls (Claude, 12 Oct 2026; for Brian to confirm or overrule)
 
+Confirmed by Brian (12 Oct 2026): armies with a ship on the next sea step
+cross all the way in one activation ("armies never hang out on water");
+withdrawal moves the whole force; a castle is a unit, so a lost castle is
+the casualty.
+
 Base rules:
 - Withdrawal is all or nothing: the whole defending force goes, to one area.
 - A beaten force with castles or a citadel loses all of them, and that is
