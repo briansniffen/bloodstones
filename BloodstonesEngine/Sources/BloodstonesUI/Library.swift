@@ -76,6 +76,18 @@ public struct LibraryView: View {
             .navigationDestination(item: $open) { game in
                 PlayView(data: data, game: game)
             }
+            #if DEBUG
+            // For screenshots: `-startSeed N` opens a new game with that seed.
+            .task {
+                let args = ProcessInfo.processInfo.arguments
+                if open == nil, let i = args.firstIndex(of: "-startSeed"), i + 1 < args.count,
+                   let seed = UInt64(args[i + 1]) {
+                    let game = SavedGame(mission: 1, seed: seed, state: data.newGame(seed: seed))
+                    context.insert(game)
+                    open = game
+                }
+            }
+            #endif
         }
     }
 
