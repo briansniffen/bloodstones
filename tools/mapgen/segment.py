@@ -8,7 +8,9 @@ frame.json:   {"inner": [x0, y0, x1, y1], "sea": [ids]} -- the playable map
               rectangle (outside = non-region) and, optionally, the sea
               region ids (otherwise guessed from water around each circle).
               Optional "outside": [[x0, y0, x1, y1], ...] rectangles inside the
-              frame that are not map, e.g. score-track boxes drawn over it.
+              frame that are not map, e.g. score-track boxes drawn over it,
+              or "auto" to detect those boxes. Optional "waterHueMin" (default
+              58): raise it (e.g. 76) on maps whose forests are blue-green.
 
 Method: build a "border cost" image (dark ink lines, thin blue rivers,
 land/sea transitions), then run marker-based watershed from each region's
@@ -26,14 +28,14 @@ import sys
 
 import cv2
 import numpy as np
-from scipy.ndimage import distance_transform_edt
+from scipy.ndimage import binary_fill_holes, distance_transform_edt
 from skimage.morphology import remove_small_holes
 from skimage.segmentation import watershed
 
 OUTSIDE = 10_000
 
 
-def border_cost(img):
+def border_cost(img, hue_min=58):
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
     h, s, v = hsv[..., 0].astype(int), hsv[..., 1].astype(int), hsv[..., 2].astype(int)
 
@@ -42,7 +44,7 @@ def border_cost(img):
 
     # 2. water: rivers are thin blue strokes; sea is large blue areas
     # include pale shallow water; then fill wave scribbles / sea creatures
-    blue = ((h > 58) & (h < 125) & (s > 25) & (v > 90)).astype(np.uint8)
+    blue = ((h > hue_min) & (h < 125) & (s > 25) & (v > 90)).astype(np.uint8)
     blue = cv2.morphologyEx(blue, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
     # close over wave scribbles before deciding what is open water
     blue = cv2.morphologyEx(blue, cv2.MORPH_CLOSE,
@@ -61,6 +63,31 @@ def border_cost(img):
     cost = np.maximum.reduce([dark, river, coast])
     cost = cv2.GaussianBlur(cost, (7, 7), 0)
     return (cost * 1000).astype(np.int32), big.astype(bool)
+
+
+def track_boxes(img, inner, band=150, snap=30):
+    """Rectangles of the score-track boxes and label plates printed over the
+    map: compact tan rounded rectangles within `band` px of the frame."""
+    x0, y0, x1, y1 = inner
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    h, s, v = hsv[..., 0].astype(int), hsv[..., 1].astype(int), hsv[..., 2].astype(int)
+    tan = ((h >= 5) & (h <= 22) & (s >= 50) & (s <= 150) & (v >= 190))
+    tan = binary_fill_holes(tan).astype(np.uint8)  # numerals are holes in the plate
+    n, lab, stats, _ = cv2.connectedComponentsWithStats(tan)
+    out = []
+    for i in range(1, n):
+        x, y, w, hh, area = stats[i]
+        near = min(x - x0, y - y0, x1 - (x + w), y1 - (y + hh)) < band
+        if near and 35 <= w <= 230 and 35 <= hh <= 90 and area / (w * hh) > 0.75:
+            bx0, by0, bx1, by1 = int(x) - 6, int(y) - 6, int(x + w) + 6, int(y + hh) + 6
+            # stretch boxes that sit near the frame out to it, so no thin strip of
+            # map survives behind the track to join regions along the edge
+            if bx0 - x0 < snap: bx0 = x0
+            if by0 - y0 < snap: by0 = y0
+            if x1 - bx1 < snap: bx1 = x1
+            if y1 - by1 < snap: by1 = y1
+            out.append([bx0, by0, bx1, by1])
+    return out
 
 
 def erase_markers(img, markers):
@@ -90,15 +117,17 @@ def classify_sea(water, markers):
     return sea
 
 
-def segment(img, markers, inner, sea_ids=None, outside=None):
+def segment(img, markers, inner, sea_ids=None, outside=None, hue_min=58):
     """Land regions flood only land pixels and sea regions only open water,
     so a land region can never reach across a strait to another shore."""
-    cost, water = border_cost(erase_markers(img, markers))
+    cost, water = border_cost(erase_markers(img, markers), hue_min)
     if sea_ids is None:
         sea_ids = classify_sea(water, markers)
     x0, y0, x1, y1 = inner
     inside = np.zeros(water.shape, bool)
     inside[y0:y1, x0:x1] = True
+    if outside == "auto":
+        outside = track_boxes(img, inner)
     for ox0, oy0, ox1, oy1 in outside or []:  # score-track boxes drawn over the map
         inside[oy0:oy1, ox0:ox1] = False
     # marker circles themselves belong to their own region's medium
@@ -177,7 +206,7 @@ if __name__ == "__main__":
     inner = cfg["inner"]
     prefix = sys.argv[4]
     labels, cost, sea_ids = segment(img, markers, inner, set(cfg["sea"]) if "sea" in cfg else None,
-                                    cfg.get("outside"))
+                                    cfg.get("outside"), cfg.get("waterHueMin", 58))
     print("sea regions:", sorted(sea_ids))
     edges = adjacency(labels)
     cv2.imwrite(prefix + "_labels.png", labels.astype(np.uint16))

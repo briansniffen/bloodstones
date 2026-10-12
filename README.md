@@ -43,8 +43,17 @@ glyphs, so the pipeline works from the rendered image:
 
 Per-map settings in `source/<map>_frame.json`: the playable rectangle, the sea
 regions, and `outside` rectangles for score-track boxes drawn over the map.
+`"outside": "auto"` detects the boxes instead, and stretches any box within 30 px
+of the frame out to it, so no strip of map behind the track joins regions.
+`"waterHueMin"` (default 58) separates water from blue-green forest; Remains
+of the Past needs 76.
+
 Key-map pages: Tyrant's Lament is Mission 1 p.2 (right half of a spread);
-Swan Dance is Mission 5 p.3 (full page).
+the others are p.3 (full page) of Missions 5, 10, 11 and 14.
+
+`terrain_guess.py` cross-checks a terrain reading against a colour classifier
+trained on the confirmed maps (about 95% right on held-out maps; weakest on
+mountains and on Remains of the Past's pale hills).
 
 ```sh
 tools/mapgen/render_key.sh 01_Solo_Mission_1.pdf 2 right source/tyrants_lament_key.png
@@ -65,6 +74,6 @@ and poppler's `pdftoppm`.
 |---|---|---|---|---|
 | Tyrant's Lament | 1, 2, 3, 4, 9 | 75 | 198 | Reviewed by Brian, Oct 2026 |
 | Swan Dance | 5, 6, 7, 8 | 76 | 198 | Reviewed by Brian, Oct 2026 |
-| Lady of the Lake | 10, 16 | | | Not started |
-| Sorcerer's Crucible | 11, 12, 13, 18 | | | Not started |
-| Remains of the Past | 14, 15, 17 | | | Not started |
+| Lady of the Lake | 10, 16 | 44 | 110 | Checked by Claude (Brian delegated), Oct 2026 |
+| Sorcerer's Crucible | 11, 12, 13, 18 | 98 | 273 | Checked by Claude (Brian delegated), Oct 2026 |
+| Remains of the Past | 14, 15, 17 | 69 | 177 | Checked by Claude (Brian delegated), Oct 2026 |

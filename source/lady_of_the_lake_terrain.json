@@ -1,0 +1,30 @@
+{
+ "mapId": "lady_of_the_lake",
+ "displayName": "Lady of the Lake",
+ "terrainSource": "read from the key-map art by Claude, cross-checked with a colour classifier trained on Brian's confirmed maps",
+ "uncertain": [],
+ "terrain": {
+  "hills": [
+   6,
+   10,
+   19,
+   34,
+   43
+  ],
+  "mountains": [],
+  "desert": [
+   3,
+   25,
+   37,
+   38
+  ],
+  "forest": [
+   1,
+   8,
+   17,
+   23,
+   36,
+   40
+  ]
+ }
+}

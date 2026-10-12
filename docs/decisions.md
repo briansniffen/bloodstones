@@ -78,4 +78,16 @@ The March map JSON files were not saved and are superseded by `data/maps/`.
   (caught by the triangle rule); Tyrant's 1–9 was a narrow water channel cut
   off by a rock, which segmentation gave to the shore. Water pockets now go
   to a sea within 120 px.
+- Brian (12 Oct 2026): "just do the other maps and come to me with any
+  great uncertainty." Lady of the Lake, Sorcerer's Crucible and Remains of
+  the Past were traced and checked by Claude, not reviewed on a page:
+  - every border under 80 px inspected by eye on a contact sheet;
+  - triangle rule clean on all three; graphs symmetric and connected;
+  - terrain read by eye and cross-checked against a colour classifier
+    trained on Brian's two confirmed maps; 168 of 174 agreed, and the 6
+    disagreements were checked and the reading kept.
+  - None of these missions has fixed army routes, so there is no route check.
+- Sorcerer's Crucible 86–88 is not a border: they touch for 5 px at the
+  mouth of a water inlet. The faces around it close as triangles through
+  sea 97 without it.
 
