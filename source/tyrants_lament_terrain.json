@@ -1,0 +1,10 @@
+{
+ "mapId": "tyrants_lament",
+ "displayName": "Tyrant's Lament",
+ "terrain": {
+  "hills": [13, 14, 18, 31, 39, 49, 64, 66],
+  "desert": [72, 73, 74, 75],
+  "mountains": [24, 58],
+  "forest": [2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 25, 30, 32, 33, 41, 52, 53, 57, 61, 67]
+ }
+}

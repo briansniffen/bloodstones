@@ -1,0 +1,6 @@
+# Publisher artwork: regenerate with tools/mapgen/render_key.sh
+source/*_key.png
+review/*.jpg
+*.pdf
+__pycache__/
+.DS_Store

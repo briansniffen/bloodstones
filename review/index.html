@@ -1,0 +1,420 @@
+<title>Tyrant's Lament Borders</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+Sans+SC:wght@500;700&family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;1,400&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: survey-table — the map is the work surface, a narrow ledger beside it records each ruling. */
+:root {
+  --bg: #eef1f0;
+  --panel: #ffffff;
+  --fg: #1d2a2b;
+  --muted: #5d6c6d;
+  --rule: #d3dbda;
+  --accent: #1f6f78;
+  --chip: #e3ebea;
+  /* overlay inks sit on the map image, so they stay the same in both themes */
+  --ink-auto: #20343a;
+  --ink-flag: #e08a00;
+  --ink-yes: #148a4b;
+  --ink-no: #c8283c;
+  --ink-add: #6b3fd0;
+  --ink-sel: #00b7d6;
+  --font-label: "Alegreya Sans SC", "Gill Sans", "Trebuchet MS", sans-serif;
+  --font-body: "Alegreya Sans", "Gill Sans", "Trebuchet MS", sans-serif;
+  --font-num: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121a1b; --panel: #1a2426; --fg: #e3ecea; --muted: #9aabaa;
+    --rule: #2c3b3d; --accent: #5cc3cc; --chip: #243336; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121a1b; --panel: #1a2426; --fg: #e3ecea; --muted: #9aabaa;
+  --rule: #2c3b3d; --accent: #5cc3cc; --chip: #243336; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  background: var(--bg); color: var(--fg);
+  font: 16px/1.45 var(--font-body);
+  padding: 16px; margin: 0;
+}
+.wrap { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; max-width: 1500px; margin: 0 auto; }
+@media (max-width: 860px) { .wrap { grid-template-columns: 1fr; } }
+
+.mapbox { background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; min-width: 0; display: flex; flex-direction: column; }
+.maptools { display: flex; gap: 8px; align-items: center; padding: 8px 10px; border-bottom: 1px solid var(--rule); flex-wrap: wrap; }
+.maptools .spacer { flex: 1; }
+.scroller { overflow: auto; max-height: calc(100vh - 120px); }
+@media (max-width: 860px) { .scroller { max-height: 75vh; } }
+.stage { position: relative; width: 100%; }
+.stage.z2 { width: 200%; }
+.stage img { display: block; width: 100%; max-width: none; height: auto; user-select: none; }
+.stage svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+.poly { fill: transparent; stroke: none; cursor: pointer; }
+.poly:hover { fill: rgba(0, 183, 214, .10); }
+.poly.sel { fill: rgba(0, 183, 214, .18); stroke: var(--ink-sel); stroke-width: 5; }
+.poly.target { fill: rgba(107, 63, 208, .10); }
+.halo { stroke: #fff; stroke-opacity: .85; stroke-linecap: round; fill: none; pointer-events: none; }
+.edge { stroke-linecap: round; fill: none; pointer-events: none; }
+.hit { stroke: transparent; stroke-width: 26; cursor: pointer; fill: none; }
+.e-auto { stroke: var(--ink-auto); stroke-width: 3; stroke-opacity: .55; }
+.e-flag { stroke: var(--ink-flag); stroke-width: 7; stroke-dasharray: 16 10; }
+.e-yes { stroke: var(--ink-yes); stroke-width: 6; }
+.e-no { stroke: var(--ink-no); stroke-width: 5; stroke-dasharray: 6 9; stroke-opacity: .9; }
+.e-add { stroke: var(--ink-add); stroke-width: 6; }
+.e-sel { stroke: var(--ink-sel) !important; stroke-width: 10 !important; stroke-opacity: 1 !important; }
+.e-dim { stroke-opacity: .12 !important; }
+.halo.dim { stroke-opacity: .1; }
+
+.ledger { background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; padding: 16px; display: flex; flex-direction: column; gap: 18px; min-width: 0; align-self: start; }
+h1 { font: 700 1.5rem/1.15 var(--font-label); letter-spacing: .02em; margin: 0; text-wrap: balance; }
+h2 { font: 700 .82rem/1.2 var(--font-label); letter-spacing: .08em; color: var(--muted); margin: 0 0 8px; }
+p { margin: 0; }
+.muted { color: var(--muted); }
+.num { font-family: var(--font-num); font-variant-numeric: tabular-nums; font-size: .92em; }
+
+.progress { height: 6px; background: var(--chip); border-radius: 3px; overflow: hidden; margin-top: 8px; }
+.progress span { display: block; height: 100%; background: var(--ink-yes); width: 0; transition: width .3s; }
+
+.legend { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; align-items: center; font-size: .9rem; }
+.legend svg { width: 38px; height: 10px; }
+
+.card { border: 1px solid var(--rule); border-radius: 6px; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.card .head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.card .big { font: 700 1.25rem var(--font-num); }
+.pill { font: 700 .72rem var(--font-label); letter-spacing: .08em; padding: 2px 8px; border-radius: 999px; background: var(--chip); color: var(--fg); }
+.pill.flag { background: #fbe7c4; color: #6b4300; }
+.pill.yes { background: #d2f0df; color: #0b5a30; }
+.pill.no { background: #f8d6db; color: #82111f; }
+.pill.add { background: #e5dcfa; color: #3b1f87; }
+.btns { display: flex; gap: 8px; flex-wrap: wrap; }
+button {
+  font: 500 .95rem var(--font-body); color: var(--fg); background: var(--chip);
+  border: 1px solid var(--rule); border-radius: 5px; padding: 6px 12px; cursor: pointer;
+}
+button:hover { border-color: var(--accent); }
+button:focus-visible { outline: 3px solid var(--ink-sel); outline-offset: 1px; }
+button.go { background: var(--ink-yes); border-color: var(--ink-yes); color: #fff; }
+button.stop { background: var(--ink-no); border-color: var(--ink-no); color: #fff; }
+button.addb { background: var(--ink-add); border-color: var(--ink-add); color: #fff; }
+button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+button[disabled] { opacity: .45; cursor: default; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font: 500 .85rem var(--font-num); padding: 3px 8px; border-radius: 4px; background: var(--chip); border: 1px solid transparent; cursor: pointer; }
+.chip:hover { border-color: var(--accent); }
+.chip.flag { box-shadow: inset 0 -3px 0 var(--ink-flag); }
+.chip.yes { box-shadow: inset 0 -3px 0 var(--ink-yes); }
+.chip.no { box-shadow: inset 0 -3px 0 var(--ink-no); text-decoration: line-through; }
+.chip.add { box-shadow: inset 0 -3px 0 var(--ink-add); }
+.chip.done { opacity: .55; }
+
+.note { font-size: .88rem; color: var(--muted); }
+.status { font-size: .85rem; color: var(--muted); min-height: 1.2em; }
+@media (prefers-reduced-motion: reduce) { .progress span { transition: none; } }
+</style>
+
+<div class="wrap">
+  <section class="mapbox" aria-label="Map">
+    <div class="maptools">
+      <button id="zoomBtn" type="button" aria-pressed="false">Zoom 2×</button>
+      <button id="allBtn" type="button" aria-pressed="false">Show only doubtful</button>
+      <span class="spacer"></span>
+      <span class="note" id="hint">Tap a line to rule on it. Tap a region to see its borders.</span>
+    </div>
+    <div class="scroller" id="scroller">
+      <div class="stage" id="stage">
+        <img id="mapimg" src="tyrants_lament.jpg" alt="Tyrant's Lament key map with numbered regions" width="1400" height="1636">
+        <svg id="ov" viewBox="0 0 1731 2023" preserveAspectRatio="none" aria-hidden="true">
+          <g id="polys"></g><g id="halos"></g><g id="edges"></g><g id="hits"></g>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <aside class="ledger">
+    <div>
+      <h1>Tyrant's Lament borders</h1>
+      <p class="muted" id="summary">Loading the traced borders…</p>
+      <div class="progress" aria-hidden="true"><span id="bar"></span></div>
+    </div>
+
+    <div class="card" id="detail" hidden></div>
+
+    <div>
+      <h2>Doubtful borders</h2>
+      <p class="note" style="margin-bottom:8px">Short shared edges: four-way corners, river mouths and coastlines. These need your eye most.</p>
+      <div class="chips" id="queue"></div>
+    </div>
+
+    <div>
+      <h2>Your rulings</h2>
+      <div class="chips" id="changes"><span class="note">None yet.</span></div>
+    </div>
+
+    <div>
+      <h2>Key</h2>
+      <div class="legend">
+        <svg viewBox="0 0 38 10"><line x1="2" y1="5" x2="36" y2="5" stroke="var(--ink-auto)" stroke-opacity=".55" stroke-width="3"/></svg><span>Traced, not yet checked</span>
+        <svg viewBox="0 0 38 10"><line x1="2" y1="5" x2="36" y2="5" stroke="var(--ink-flag)" stroke-width="5" stroke-dasharray="7 4"/></svg><span>Doubtful, check first</span>
+        <svg viewBox="0 0 38 10"><line x1="2" y1="5" x2="36" y2="5" stroke="var(--ink-yes)" stroke-width="5"/></svg><span>You confirmed it</span>
+        <svg viewBox="0 0 38 10"><line x1="2" y1="5" x2="36" y2="5" stroke="var(--ink-no)" stroke-width="4" stroke-dasharray="3 4"/></svg><span>You ruled it out</span>
+        <svg viewBox="0 0 38 10"><line x1="2" y1="5" x2="36" y2="5" stroke="var(--ink-add)" stroke-width="5"/></svg><span>You added it</span>
+      </div>
+    </div>
+
+    <p class="status" id="status" role="status"></p>
+  </aside>
+</div>
+
+<script>
+(function () {
+  const SVGNS = "http://www.w3.org/2000/svg";
+  const $ = (id) => document.getElementById(id);
+  const key = (a, b) => (a < b ? a + "-" + b : b + "-" + a);
+  const LS = "tl-borders-local";
+
+  let map = null, regions = {}, auto = [], flagged = new Set();
+  let rulings = {};            // key -> {state: "yes"|"no"|"added"}
+  let sel = null;              // {type:"edge", k} | {type:"region", id}
+  let adding = false, onlyDoubt = false;
+  let store = null;            // db collection, or null for browser-only
+
+  function setStatus(t) { $("status").textContent = t || ""; }
+
+  function edgeState(k) {
+    const r = rulings[k];
+    if (r) return r.state === "added" ? "add" : r.state;
+    return flagged.has(k) ? "flag" : "auto";
+  }
+  function allKeys() {
+    const ks = new Set(auto);
+    for (const k in rulings) if (rulings[k].state === "added") ks.add(k);
+    return [...ks];
+  }
+  function ends(k) { return k.split("-").map(Number); }
+  function pos(id) { return regions[id].displayPosition; }
+
+  // ---------- drawing ----------
+  function el(tag, attrs, parent) {
+    const e = document.createElementNS(SVGNS, tag);
+    for (const a in attrs) e.setAttribute(a, attrs[a]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+
+  function drawPolys() {
+    const g = $("polys");
+    for (const r of map.regions) {
+      const p = el("polygon", { points: r.polygon.map((q) => q.join(",")).join(" "), class: "poly", "data-id": r.id }, g);
+      p.addEventListener("click", () => regionClick(r.id));
+    }
+  }
+
+  function draw() {
+    const H = $("halos"), E = $("edges"), X = $("hits");
+    H.textContent = ""; E.textContent = ""; X.textContent = "";
+    const focusRegion = sel && sel.type === "region" ? sel.id : null;
+    for (const k of allKeys()) {
+      const st = edgeState(k);
+      if (onlyDoubt && st === "auto") continue;
+      const [a, b] = ends(k), pa = pos(a), pb = pos(b);
+      const line = { x1: pa[0], y1: pa[1], x2: pb[0], y2: pb[1] };
+      const dim = focusRegion && a !== focusRegion && b !== focusRegion;
+      const isSel = sel && sel.type === "edge" && sel.k === k;
+      el("line", Object.assign({ class: "halo" + (dim ? " dim" : ""), "stroke-width": st === "auto" ? 6 : 11 }, line), H);
+      el("line", Object.assign({ class: "edge e-" + st + (isSel ? " e-sel" : "") + (dim ? " e-dim" : "") }, line), E);
+      const h = el("line", Object.assign({ class: "hit" }, line), X);
+      const t = el("title", {}, h); t.textContent = a + " – " + b;
+      h.addEventListener("click", (ev) => { ev.stopPropagation(); selectEdge(k); });
+    }
+    document.querySelectorAll(".poly").forEach((p) => {
+      const id = +p.dataset.id;
+      p.classList.toggle("sel", focusRegion === id);
+      p.classList.toggle("target", adding && focusRegion !== null && id !== focusRegion);
+    });
+  }
+
+  // ---------- ledger ----------
+  function chip(k, extraClass, label) {
+    const c = document.createElement("button");
+    c.type = "button";
+    c.className = "chip " + (extraClass || "");
+    c.textContent = label || k.replace("-", " – ");
+    c.addEventListener("click", () => selectEdge(k, true));
+    return c;
+  }
+
+  function renderLedger() {
+    const doubt = [...flagged];
+    const checked = doubt.filter((k) => rulings[k]).length;
+    const added = Object.keys(rulings).filter((k) => rulings[k].state === "added").length;
+    const out = Object.keys(rulings).filter((k) => rulings[k].state === "no").length;
+    const total = auto.length - out + added;
+    $("summary").innerHTML =
+      '<span class="num">' + total + "</span> borders between <span class=\"num\">75</span> regions. " +
+      'Doubtful checked: <span class="num">' + checked + " / " + doubt.length + "</span>.";
+    $("bar").style.width = (doubt.length ? (100 * checked) / doubt.length : 100) + "%";
+
+    const q = $("queue"); q.textContent = "";
+    doubt.sort((x, y) => ends(x)[0] - ends(y)[0] || ends(x)[1] - ends(y)[1]).forEach((k) => {
+      const st = edgeState(k);
+      q.appendChild(chip(k, st + (rulings[k] ? " done" : "")));
+    });
+
+    const c = $("changes"); c.textContent = "";
+    const mine = Object.keys(rulings).sort((x, y) => (rulings[x].at || 0) - (rulings[y].at || 0));
+    if (!mine.length) { const s = document.createElement("span"); s.className = "note"; s.textContent = "None yet."; c.appendChild(s); }
+    mine.forEach((k) => c.appendChild(chip(k, edgeState(k))));
+    renderDetail();
+  }
+
+  const STATE_TEXT = { auto: "Traced", flag: "Doubtful", yes: "Confirmed", no: "Ruled out", add: "Added by you" };
+
+  function renderDetail() {
+    const d = $("detail");
+    if (!sel) { d.hidden = true; return; }
+    d.hidden = false; d.textContent = "";
+    if (sel.type === "edge") {
+      const [a, b] = ends(sel.k), st = edgeState(sel.k);
+      d.innerHTML =
+        '<div class="head"><span class="big">' + a + " – " + b + '</span><span class="pill ' + st + '">' + STATE_TEXT[st] + "</span></div>" +
+        '<p class="note">' + cap(regions[a].terrain) + " " + a + " and " + regions[b].terrain + " " + b + ". Do they share a border on the physical map?</p>";
+      const bt = document.createElement("div"); bt.className = "btns";
+      if (st === "add") {
+        bt.append(btn("Remove this border", "stop", () => rule(sel.k, null)));
+      } else {
+        bt.append(
+          btn("Real border", "go", () => rule(sel.k, "yes"), st === "yes"),
+          btn("Not adjacent", "stop", () => rule(sel.k, "no"), st === "no")
+        );
+        if (rulings[sel.k]) bt.append(btn("Clear ruling", "", () => rule(sel.k, null)));
+      }
+      d.appendChild(bt);
+      const nb = doubtNext(sel.k);
+      if (nb) d.appendChild(btn("Next doubtful →", "", () => selectEdge(nb, true)));
+    } else {
+      const id = sel.id, r = regions[id];
+      const ks = allKeys().filter((k) => ends(k).includes(id)).sort((x, y) => other(x, id) - other(y, id));
+      d.innerHTML = '<div class="head"><span class="big">Region ' + id + '</span><span class="pill">' + r.terrain + "</span></div>";
+      const ch = document.createElement("div"); ch.className = "chips";
+      ks.forEach((k) => ch.appendChild(chip(k, edgeState(k), String(other(k, id)))));
+      d.appendChild(ch);
+      const bt = document.createElement("div"); bt.className = "btns";
+      const ab = btn(adding ? "Tap the other region…" : "Add a missing border", adding ? "on" : "addb", () => { adding = !adding; draw(); renderDetail(); hint(); });
+      ab.setAttribute("aria-pressed", String(adding));
+      bt.append(ab);
+      d.appendChild(bt);
+    }
+  }
+  function other(k, id) { const [a, b] = ends(k); return a === id ? b : a; }
+  function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+  function btn(label, cls, fn, pressed) {
+    const b = document.createElement("button"); b.type = "button"; b.textContent = label;
+    if (cls) b.className = cls;
+    if (pressed) { b.disabled = true; }
+    b.addEventListener("click", fn);
+    return b;
+  }
+  function doubtNext(k) {
+    const list = [...flagged].sort((x, y) => ends(x)[0] - ends(y)[0] || ends(x)[1] - ends(y)[1]);
+    const rest = list.filter((x) => x !== k && !rulings[x]);
+    return rest[0] || null;
+  }
+  function hint() {
+    $("hint").textContent = adding && sel && sel.type === "region"
+      ? "Tap the region that borders " + sel.id + "."
+      : "Tap a line to rule on it. Tap a region to see its borders.";
+  }
+
+  // ---------- interaction ----------
+  function selectEdge(k, scroll) {
+    adding = false; sel = { type: "edge", k };
+    draw(); renderDetail(); hint();
+    if (scroll) scrollTo(k);
+  }
+  function regionClick(id) {
+    if (adding && sel && sel.type === "region" && id !== sel.id) {
+      const k = key(sel.id, id);
+      adding = false;
+      if (auto.includes(k)) { selectEdge(k); setStatus(k.replace("-", " – ") + " is already traced. Confirm it here."); return; }
+      rule(k, "added");
+      selectEdge(k);
+      return;
+    }
+    adding = false; sel = { type: "region", id };
+    draw(); renderDetail(); hint();
+  }
+  function scrollTo(k) {
+    const [a, b] = ends(k), pa = pos(a), pb = pos(b);
+    const sc = $("scroller"), stage = $("stage");
+    const f = stage.clientWidth / 1731;
+    const cx = ((pa[0] + pb[0]) / 2) * f, cy = ((pa[1] + pb[1]) / 2) * f;
+    sc.scrollTo({ left: cx - sc.clientWidth / 2, top: cy - sc.clientHeight / 2, behavior: "smooth" });
+  }
+
+  async function rule(k, state) {
+    const prev = rulings[k];
+    if (state) rulings[k] = { state, at: Date.now() }; else delete rulings[k];
+    draw(); renderLedger();
+    try {
+      if (store) {
+        if (state) await store.doc(k).set({ state, at: rulings[k].at });
+        else await store.doc(k).delete();
+        setStatus("Saved.");
+      } else {
+        try { localStorage.setItem(LS, JSON.stringify(rulings)); } catch (e) {}
+        setStatus("Kept in this browser only.");
+      }
+    } catch (e) {
+      if (prev) rulings[k] = prev; else delete rulings[k];
+      draw(); renderLedger();
+      setStatus(e && e.code === "invalid_argument"
+        ? "This view can't save rulings. Open the page from your own account to make changes."
+        : "Couldn't save that ruling. Try again in a moment.");
+    }
+  }
+
+  $("zoomBtn").addEventListener("click", () => {
+    const on = $("stage").classList.toggle("z2");
+    $("zoomBtn").textContent = on ? "Fit width" : "Zoom 2×";
+    $("zoomBtn").setAttribute("aria-pressed", String(on));
+    if (sel && sel.type === "edge") requestAnimationFrame(() => scrollTo(sel.k));
+  });
+  $("allBtn").addEventListener("click", () => {
+    onlyDoubt = !onlyDoubt;
+    $("allBtn").textContent = onlyDoubt ? "Show all borders" : "Show only doubtful";
+    $("allBtn").setAttribute("aria-pressed", String(onlyDoubt));
+    draw();
+  });
+
+  // ---------- boot ----------
+  async function boot() {
+    const res = await fetch("tyrants_lament.json");
+    map = await res.json();
+    for (const r of map.regions) regions[r.id] = r;
+    const ks = new Set();
+    for (const r of map.regions) for (const n of r.adjacentTo) ks.add(key(r.id, n));
+    auto = [...ks];
+    flagged = new Set(map.provenance.reviewEdges.map(([a, b]) => key(a, b)));
+    drawPolys(); draw(); renderLedger();
+
+    const db = window.claude && window.claude.use ? await window.claude.use("db") : null;
+    if (db) {
+      store = db.collection("rulings");
+      store.onSnapshot((snap) => {
+        const next = {};
+        snap.docs.forEach((d) => { const v = d.data(); if (v && v.state) next[d.id] = { state: v.state, at: v.at || 0 }; });
+        rulings = next; draw(); renderLedger();
+      }, () => setStatus("Lost the connection to saved rulings. Reload to reconnect."));
+    } else {
+      try { rulings = JSON.parse(localStorage.getItem(LS) || "{}") || {}; } catch (e) { rulings = {}; }
+      setStatus("Rulings made here stay in this browser only.");
+      draw(); renderLedger();
+    }
+  }
+  boot().catch(() => setStatus("Couldn't load the map data. Reload the page."));
+})();
+</script>
