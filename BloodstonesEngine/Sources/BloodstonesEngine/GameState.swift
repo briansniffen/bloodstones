@@ -60,8 +60,36 @@ public struct GameState: Codable, Sendable, Equatable {
     public var villages: [Village] = []
     public var nextUnitID = 1
     public var mission: MissionState?
+    /// Factions a person plays; the rest are run by the mission script.
+    public var humans: Set<FactionID> = []
+    public var phase: Phase = .capture
+    /// Pips left from the one tile spent in the capture or construct phase.
+    public var pipBudget: Int?
+    public var battle: Battle?
+    /// Regions each faction withdrew or retreated from this turn; they may
+    /// not withdraw or retreat back into them.
+    public var withdrewFrom: [FactionID: [RegionID]] = [:]
+    public var outcome: Outcome?
+    /// What the last `apply` did.
+    public var events: [Event] = []
 
     public var activeFaction: FactionID { turnOrder[activeIndex] }
+
+    public func unit(_ id: Int) -> MapUnit? { units.first { $0.id == id } }
+
+    public func hasEnemyUnits(of f: FactionID, in region: RegionID) -> Bool {
+        units.contains { $0.region == region && $0.faction != f }
+    }
+
+    /// Regions where `f` and some other faction both have units.
+    public func contestedRegions(for f: FactionID) -> [RegionID] {
+        Set(units(of: f).map(\.region)).filter { hasEnemyUnits(of: f, in: $0) }.sorted()
+    }
+
+    mutating func removeUnit(_ id: Int) -> MapUnit {
+        let i = units.firstIndex { $0.id == id }!
+        return units.remove(at: i)
+    }
 
     public func units(in region: RegionID) -> [MapUnit] { units.filter { $0.region == region } }
     public func units(of faction: FactionID) -> [MapUnit] { units.filter { $0.faction == faction } }

@@ -123,3 +123,37 @@ The March map JSON files were not saved and are superseded by `data/maps/`.
   cost paid by discarding other hand tiles; an army that reaches a sea with
   no ship in hand waits where it is. Substitutions also come from the hand.
   No regroup, so the 21-tile bag is the game clock.
+
+## Engine rules calls (Claude, 12 Oct 2026; for Brian to confirm or overrule)
+
+Base rules:
+- Withdrawal is all or nothing: the whole defending force goes, to one area.
+- A beaten force with castles or a citadel loses all of them, and that is
+  its casualty; no further unit is chosen. Survivors then retreat.
+- Ships, dragons and land units move in separate groups. Each leader in a
+  land group carries one unit free: a group of n with L leaders pays for
+  max(1, n − L) units.
+- Paying with a tile that isn't needed is rejected (overpaying by part of
+  a tile is fine, as the rulebook allows).
+- Solo battles: the human draws and decides on substitution first, then
+  the non-player draws. Between two people, both draw at the start of
+  each round and the attacker decides first.
+- `legalActions` lists one canonical payment per choice (least waste, then
+  fewest tiles, then lowest IDs); `apply` accepts any valid payment.
+
+Mission 1 Dragon Riders:
+- Turn order: capture villages where they stand → fight any region they
+  share with the player → draw and activate → move the army → move the
+  dragons → build the army's village → desert check.
+- With a Dragon Rider ship on the next sea step, the army crosses to the
+  land beyond in one activation. With an enemy unit on that sea, it waits.
+- A ship is paid for with their lowest-pip non-ship hand tile.
+- They substitute the lowest-pip hand tile that wins (sparing ships),
+  replacing their lowest Battle tile. For a defender with shields, a tie
+  counts as a win.
+- "Undefended village": a player village with no player units on it.
+- Their village goes only where no village of any faction and no non-DR
+  unit already stand; adjacency is ignored, terrain limits are not.
+- A dragon attacked on its starting region has no "towards home" option,
+  so it takes the highest-numbered one. From 49 that is mountain 58, where
+  Horse Lords can't follow; it only comes down for an undefended village.

@@ -12,7 +12,12 @@ physical game and has the final say on rules questions.
   triangle rule. Treat these files as fixed inputs. The pipeline that made
   them is `tools/mapgen/` (Python, documented in README.md). Don't hand-edit
   the JSON; change `source/<map>_review.json` or the terrain file and rebuild.
-- **The engine has not been started.** That's the next job.
+- **The engine plays Mission 1 end to end** (`BloodstonesEngine/`, `swift test`):
+  map graph, tiles, the full base-rules turn for a human player, and the
+  Dragon Rider script. Random-play tests check every listed action
+  applies, tiles are conserved, and games finish. Not yet built: Corsair,
+  Necromancer and Chaos Horde powers, the competitive end of game, and the app.
+  Rules calls Claude made are listed in `docs/decisions.md` for Brian.
 - **There's no tech spec in the repo.** The March spec was lost.
   `docs/decisions.md` records every decision that is known for certain; follow
   it, and ask Brian whenever the rulebook and the decisions log don't settle
