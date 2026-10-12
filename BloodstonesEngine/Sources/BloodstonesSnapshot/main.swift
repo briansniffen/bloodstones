@@ -6,6 +6,7 @@ import SwiftUI
 // Renders the play screen for a few game positions to PNGs, so the UI can
 // be checked without a simulator.
 //   swift run BloodstonesSnapshot <output dir>
+//   swift run BloodstonesSnapshot --icon <file.png>
 
 @MainActor func render(_ model: GameModel, to url: URL, size: CGSize = CGSize(width: 1194, height: 834)) {
     let view = GameScreen(model: model)
@@ -22,8 +23,23 @@ import SwiftUI
     print("wrote \(url.path)")
 }
 
+/// `--icon <file.png>`: the 1024-px app icon, opaque as App Store Connect requires.
+@MainActor func renderIcon(to url: URL) {
+    let renderer = ImageRenderer(content: IconView().frame(width: 1024, height: 1024))
+    renderer.scale = 1
+    renderer.isOpaque = true
+    guard let cg = renderer.cgImage,
+          let png = NSBitmapImageRep(cgImage: cg).representation(using: .png, properties: [:]) else {
+        print("icon render failed"); return
+    }
+    try? png.write(to: url)
+    print("wrote \(url.path)")
+}
+
 @MainActor func main() throws {
-    let out = URL(fileURLWithPath: CommandLine.arguments.dropFirst().first ?? ".")
+    let args = Array(CommandLine.arguments.dropFirst())
+    if args.first == "--icon", args.count > 1 { renderIcon(to: URL(fileURLWithPath: args[1])); return }
+    let out = URL(fileURLWithPath: args.first ?? ".")
     var dir = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
     while !FileManager.default.fileExists(atPath: dir.appendingPathComponent("data/factions.json").path) {
         dir.deleteLastPathComponent()
