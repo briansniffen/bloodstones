@@ -1,26 +1,26 @@
-import BloodstonesEngine
-
 /// Plain-text descriptions of game pieces, actions and events.
-struct Describer {
-    let engine: Engine
-    let you: FactionID
+public struct Describer: Sendable {
+    public let engine: Engine
+    public let you: FactionID
 
-    func name(_ t: UnitType) -> String {
+    public init(engine: Engine, you: FactionID) { self.engine = engine; self.you = you }
+
+    public func name(_ t: UnitType) -> String {
         switch t {
         case .siegeEngine: "Siege Engine"
         default: t.rawValue.prefix(1).uppercased() + t.rawValue.dropFirst()
         }
     }
 
-    func name(_ f: FactionID) -> String { engine.catalog[f].name }
+    public func name(_ f: FactionID) -> String { engine.catalog[f].name }
 
-    func region(_ r: RegionID) -> String { "\(r) \(engine.map.terrain(of: r).rawValue)" }
+    public func region(_ r: RegionID) -> String { "\(r) \(engine.map.terrain(of: r).rawValue)" }
 
-    func unit(_ u: MapUnit) -> String { "\(name(u.type))#\(u.id)" }
+    public func unit(_ u: MapUnit) -> String { "\(name(u.type))#\(u.id)" }
 
-    func tile(_ t: Tile) -> String { "[\(t.id)] \(name(t.unit)) \(t.pips)" }
+    public func tile(_ t: Tile) -> String { "[\(t.id)] \(name(t.unit)) \(t.pips)" }
 
-    func tiles(_ ids: [Int], in s: GameState) -> String {
+    public func tiles(_ ids: [Int], in s: GameState) -> String {
         let hand = s.factions[you]!.hand
         let parts = ids.map { id in hand.first { $0.id == id }.map(tile) ?? "[\(id)]" }
         let pips = ids.compactMap { id in hand.first { $0.id == id }?.pips }.reduce(0, +)
@@ -28,11 +28,11 @@ struct Describer {
     }
 
     /// Looks units up in `s`, then in `before` (for units since eliminated).
-    func units(_ ids: [Int], in s: GameState, before: GameState? = nil) -> String {
+    public func units(_ ids: [Int], in s: GameState, before: GameState? = nil) -> String {
         ids.map { id in (s.unit(id) ?? before?.unit(id)).map(unit) ?? "#\(id)" }.joined(separator: ", ")
     }
 
-    func action(_ a: Action, in s: GameState) -> String {
+    public func action(_ a: Action, in s: GameState) -> String {
         switch a {
         case .endPhase:
             switch s.phase {
@@ -69,7 +69,7 @@ struct Describer {
         }
     }
 
-    func event(_ e: Event, in s: GameState, before: GameState) -> String? {
+    public func event(_ e: Event, in s: GameState, before: GameState) -> String? {
         switch e {
         case .turnStarted(let f): return "— \(name(f)) turn —"
         case .drew(let f, let n): return "\(name(f)) drew \(n) tile\(n == 1 ? "" : "s")"

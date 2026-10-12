@@ -130,7 +130,7 @@ extension Engine {
 
     /// The cheapest way to pay `cost` pips: least waste, then fewest tiles,
     /// then lowest tile IDs. Nil if the hand can't cover it.
-    func cheapestPayment(_ cost: Int, from hand: [Tile]) -> [Int]? {
+    public func cheapestPayment(_ cost: Int, from hand: [Tile]) -> [Int]? {
         let tiles = hand.sorted { $0.id < $1.id }
         var best: (key: [Int], ids: [Int])?
         for mask in 1..<(1 << tiles.count) {
