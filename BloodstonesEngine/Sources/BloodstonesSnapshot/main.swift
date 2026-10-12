@@ -45,11 +45,13 @@ import SwiftUI
         dir.deleteLastPathComponent()
         guard dir.path != "/" else { print("no data/ found"); return }
     }
-    let data = try GameData.load(from: dir.appendingPathComponent("data"))
+    let artDir = dir.appendingPathComponent("art")
+    let data = try GameData.load(from: dir.appendingPathComponent("data"),
+                                 art: FileManager.default.fileExists(atPath: artDir.path) ? artDir : nil)
     let start = data.newGame(seed: 7)
 
     // 1. Opening: main phase, the stack on 61 selected.
-    let m1 = GameModel(engine: data.engine, state: start)
+    let m1 = GameModel(engine: data.engine, state: start, art: data.art)
     m1.perform(.endPhase)
     m1.tap(61)
     render(m1, to: out.appendingPathComponent("1-move.png"))
@@ -57,7 +59,7 @@ import SwiftUI
     render(m1, to: out.appendingPathComponent("1b-confirm.png"))
 
     // 2. A battle: cavalry into the skirmisher on 52, then fight.
-    let m2 = GameModel(engine: data.engine, state: start)
+    let m2 = GameModel(engine: data.engine, state: start, art: data.art)
     m2.perform(.endPhase)
     m2.tap(61)
     for u in m2.selectedUnits where m2.state.unit(u)?.type != .cavalry { m2.toggleUnit(u) }
@@ -67,7 +69,7 @@ import SwiftUI
     render(m2, to: out.appendingPathComponent("2-battle.png"))
 
     // 3. A few turns in, ending phases only, to show the Dragon Riders moving.
-    let m3 = GameModel(engine: data.engine, state: start)
+    let m3 = GameModel(engine: data.engine, state: start, art: data.art)
     for _ in 0..<9 where m3.endPhaseAvailable { m3.perform(.endPhase) }
     render(m3, to: out.appendingPathComponent("3-later.png"))
 }

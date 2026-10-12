@@ -4,12 +4,13 @@ import SwiftUI
 
 @main
 struct BloodstonesApp: App {
-    /// The map and faction data, bundled from the repo's `data/` folder.
+    /// The map and faction data, bundled from the repo's `data/` folder,
+    /// and the artwork from `art/` (made by tools/art/extract_art.py).
     private let data: Result<GameData, Error> = Result {
         guard let url = Bundle.main.url(forResource: "data", withExtension: nil) else {
             throw CocoaError(.fileNoSuchFile)
         }
-        return try GameData.load(from: url)
+        return try GameData.load(from: url, art: Bundle.main.url(forResource: "art", withExtension: nil))
     }
 
     var body: some Scene {

@@ -47,6 +47,7 @@ public struct LibraryView: View {
     @Environment(\.modelContext) private var context
     @Query(sort: \SavedGame.updated, order: .reverse) private var games: [SavedGame]
     @State private var open: SavedGame?
+    @State private var showAbout = false
 
     public init(data: GameData) { self.data = data }
 
@@ -73,6 +74,12 @@ public struct LibraryView: View {
                 }
             }
             .navigationTitle("Bloodstones")
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Button { showAbout = true } label: { Label("About", systemImage: "info.circle") }
+                }
+            }
+            .sheet(isPresented: $showAbout) { AboutView(art: data.art) }
             .navigationDestination(item: $open) { game in
                 PlayView(data: data, game: game)
             }
@@ -121,7 +128,7 @@ struct PlayView: View {
         #endif
         .task {
             guard model == nil, let state = game.state else { return }
-            let m = GameModel(engine: data.engine, state: state)
+            let m = GameModel(engine: data.engine, state: state, art: data.art)
             m.onChange = { [game] s in game.store(s) }
             model = m
         }

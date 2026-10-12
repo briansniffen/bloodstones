@@ -10,6 +10,7 @@ set -eu
 
 TEAM=${1:?usage: testflight.sh TEAM_ID}
 cd "$(dirname "$0")"
+[ -f ../art/art.json ] || { echo "No art/ folder: run 'uv run tools/art/extract_art.py' first." >&2; exit 1; }
 BUILD=$(git rev-list --count HEAD)
 OUT=build/testflight
 rm -rf "$OUT"

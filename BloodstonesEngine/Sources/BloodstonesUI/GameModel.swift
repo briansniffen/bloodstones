@@ -5,13 +5,21 @@ import Observation
 /// The map, faction cards and Mission 1 rules, loaded from a `data/` folder.
 public struct GameData: Sendable {
     public let engine: Engine
+    /// The publisher's artwork, when an `art/` folder is available.
+    public let art: Art?
 
-    public init(engine: Engine) { self.engine = engine }
+    public init(engine: Engine, art: Art? = nil) {
+        self.engine = engine
+        self.art = art
+    }
 
-    public static func load(from data: URL) throws -> GameData {
+    /// `art` is the folder made by `tools/art/extract_art.py`; without it
+    /// the map and tiles are drawn as plain shapes.
+    public static func load(from data: URL, art: URL? = nil) throws -> GameData {
         let map = try MapGraph(contentsOf: data.appendingPathComponent("maps/\(Mission1DragonHunt.mapId).json"))
         let catalog = try FactionCatalog(contentsOf: data.appendingPathComponent("factions.json"))
-        return GameData(engine: Mission1DragonHunt.engine(map: map, catalog: catalog))
+        return GameData(engine: Mission1DragonHunt.engine(map: map, catalog: catalog),
+                        art: try art.map { try Art.load(from: $0, mapId: Mission1DragonHunt.mapId) })
     }
 
     public func newGame(seed: UInt64) -> GameState {
@@ -86,9 +94,11 @@ public final class GameModel {
     public var onChange: ((GameState) -> Void)?
     /// Region outlines for drawing and tapping, built once.
     @ObservationIgnored let shapes: MapShapes
+    @ObservationIgnored public let art: Art?
 
-    public init(engine: Engine, state: GameState) {
+    public init(engine: Engine, state: GameState, art: Art? = nil) {
         self.engine = engine
+        self.art = art
         shapes = MapShapes(engine.map)
         self.state = state
         describer = Describer(engine: engine, you: .horseLords)

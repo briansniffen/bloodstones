@@ -9,10 +9,12 @@
 /* Begin PBXBuildFile section */
 		B50000000000000000000001 /* BloodstonesUI in Frameworks */ = {isa = PBXBuildFile; productRef = B50000000000000000000010 /* BloodstonesUI */; };
 		B50000000000000000000002 /* data in Resources */ = {isa = PBXBuildFile; fileRef = B50000000000000000000003 /* data */; };
+		B500000000000000000000A1 /* art in Resources */ = {isa = PBXBuildFile; fileRef = B500000000000000000000A2 /* art */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		B50000000000000000000003 /* data */ = {isa = PBXFileReference; lastKnownFileType = folder; name = data; path = ../data; sourceTree = "<group>"; };
+		B500000000000000000000A2 /* art */ = {isa = PBXFileReference; lastKnownFileType = folder; name = art; path = ../art; sourceTree = "<group>"; };
 		B50000000000000000000004 /* Bloodstones.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Bloodstones.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -41,6 +43,7 @@
 			children = (
 				B50000000000000000000005 /* Bloodstones */,
 				B50000000000000000000003 /* data */,
+				B500000000000000000000A2 /* art */,
 				B50000000000000000000008 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -122,6 +125,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				B50000000000000000000002 /* data in Resources */,
+				B500000000000000000000A1 /* art in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

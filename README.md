@@ -16,9 +16,29 @@ locally from your own copies (see below).
 | `data/maps/` | Map JSON the app loads: regions, terrain, adjacency, polygons. |
 | `source/` | Per-map inputs for the map pipeline (marker positions, frame, terrain, segmentation output). |
 | `tools/mapgen/` | Map extraction pipeline. |
+| `tools/art/` | Cuts the board, tile, citadel, village and faction-card art out of the PDFs into `art/` (gitignored). |
 | `BloodstonesEngine/` | Swift package: the rules engine (`swift test`) and a text-mode player for Mission 1 (`swift run --package-path BloodstonesEngine bloodstones [--seed N]`). |
 | `App/` | Xcode project for the iPad app (iPadOS 17, landscape, SwiftData). Open `App/Bloodstones.xcodeproj`; the screens live in the package's `BloodstonesUI` library, and `swift run --package-path BloodstonesEngine BloodstonesSnapshot <dir>` renders them to PNGs on a Mac. |
 | `review/` | `template.html` for the per-map review pages, which `make_review.py` generates into `review/<map>/`. |
+
+## Artwork
+
+The app shows the publisher's art, licensed from Martin Wallace for this
+adaptation. Like the PDFs, it stays out of git; build it from `pdfs/`:
+
+    uv run tools/art/extract_art.py [--check DIR]
+
+That writes `art/`, which the Xcode project bundles (and `App/testflight.sh`
+requires). Boards are the key-map pages at 300 dpi with a 110 px frame
+margin, so map coordinates line up with `data/maps`. Tile figures,
+citadels and village icons come from the faction cards (rulebook pp. 24–26)
+at 600 dpi, with the tile colour recorded in `art/art.json`; the app draws
+the tile itself so it can show the real pip value. `--check DIR` writes
+contact sheets: every board with its region outlines, and every cut-out.
+Chaos Horde tiles are low-resolution bitmaps in the rulebook. The rest are
+vector art and come out clean.
+
+Without `art/`, the app and `BloodstonesSnapshot` fall back to flat colours.
 
 ## Map pipeline
 

@@ -200,7 +200,11 @@ struct TileCard: View {
         let picked = model.payment.contains(tile.id)
         let building = model.buildTile == tile.id
         VStack(spacing: 3) {
-            Text("\(tile.pips)").font(.title2.weight(.bold).monospacedDigit())
+            if let art = model.art {
+                TileFace(tile: tile, art: art)
+            } else {
+                Text("\(tile.pips)").font(.title2.weight(.bold).monospacedDigit())
+            }
             Text(model.describer.name(tile.unit)).font(.caption2).lineLimit(1).minimumScaleFactor(0.7)
             Text(tile.buildCost.map { String(repeating: "▪︎", count: $0).isEmpty ? "free" : String(repeating: "▪︎", count: $0) } ?? " ")
                 .font(.caption2).foregroundStyle(.secondary)
@@ -219,6 +223,35 @@ struct TileCard: View {
         .overlay(RoundedRectangle(cornerRadius: 8).stroke(picked ? Palette.selected : .clear, lineWidth: 2))
         .contentShape(Rectangle())
         .onTapGesture { model.toggleTile(tile.id) }
+    }
+}
+
+/// A tile drawn like the physical one: its faction's colour, the unit's
+/// figure, and the pip value.
+struct TileFace: View {
+    let tile: Tile
+    let art: Art
+
+    var body: some View {
+        let colour = art.tileColour(tile.faction) ?? Palette.faction(tile.faction)
+        RoundedRectangle(cornerRadius: 7)
+            .fill(colour)
+            .overlay {
+                if let figure = art.unit(tile.faction, tile.unit) {
+                    figure.image.resizable().scaledToFit().padding(.vertical, 3).padding(.horizontal, 14)
+                }
+            }
+            .overlay(alignment: .topLeading) {
+                Text("\(tile.pips)")
+                    .font(.headline.weight(.heavy).monospacedDigit())
+                    .foregroundStyle(.white)
+                    .frame(width: 22, height: 22)
+                    .background(Circle().fill(.black.opacity(0.75)))
+                    .offset(x: -5, y: -5)
+            }
+            .overlay(RoundedRectangle(cornerRadius: 7).stroke(.black.opacity(0.3), lineWidth: 0.5))
+            .aspectRatio(2, contentMode: .fit)
+            .padding(.top, 5).padding(.leading, 5)
     }
 }
 
