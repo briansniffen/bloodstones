@@ -56,6 +56,10 @@ struct MapFit {
 public struct MapView: View {
     let model: GameModel
     var shapes: MapShapes { model.shapes }
+    /// A press in progress: where it started, and whether it has turned
+    /// into a hold (which peeks instead of tapping).
+    @State private var press: CGPoint?
+    @State private var holdTimer: Task<Void, Never>?
 
     public init(model: GameModel) { self.model = model }
 
@@ -63,15 +67,50 @@ public struct MapView: View {
         GeometryReader { geo in
             let fit = MapFit(map: model.art?.map?.bounds ?? CGRect(origin: .zero, size: shapes.size), in: geo.size)
             let highlights = model.highlights()
-            Canvas { ctx, _ in
-                draw(in: &ctx, fit: fit, highlights: highlights)
-            }
-            .contentShape(Rectangle())
-            .onTapGesture(coordinateSpace: .local) { loc in
-                if let r = shapes.region(at: fit.toMap(loc)) { model.tap(r) }
+            ZStack(alignment: .topLeading) {
+                Canvas { ctx, _ in
+                    draw(in: &ctx, fit: fit, highlights: highlights)
+                }
+                .contentShape(Rectangle())
+                .gesture(pressGesture(fit))
+                ArmyBoards(model: model, fit: fit)
+                if let r = model.peek, let c = shapes.centres[r] {
+                    PeekView(model: model, region: r)
+                        .fixedSize()
+                        .position(peekPosition(fit.toView(c), in: geo.size))
+                        .allowsHitTesting(false)
+                }
             }
         }
         .background(Palette.border.opacity(0.85))
+    }
+
+    /// Tap a region to act on it; hold to see everything in it.
+    private func pressGesture(_ fit: MapFit) -> some Gesture {
+        DragGesture(minimumDistance: 0, coordinateSpace: .local)
+            .onChanged { v in
+                if press == nil {
+                    press = v.startLocation
+                    let r = shapes.region(at: fit.toMap(v.startLocation))
+                    holdTimer = Task { @MainActor in
+                        try? await Task.sleep(for: .milliseconds(350))
+                        if !Task.isCancelled, r.map({ !model.state.units(in: $0).isEmpty }) == true { model.peek = r }
+                    }
+                }
+                if hypot(v.translation.width, v.translation.height) > 12 { holdTimer?.cancel() }
+            }
+            .onEnded { v in
+                holdTimer?.cancel()
+                defer { press = nil }
+                if model.peek != nil { model.peek = nil; return }
+                guard hypot(v.translation.width, v.translation.height) <= 12 else { return }
+                if let r = shapes.region(at: fit.toMap(v.startLocation)) { model.tap(r) }
+            }
+    }
+
+    /// Above the finger, kept on screen.
+    private func peekPosition(_ p: CGPoint, in size: CGSize) -> CGPoint {
+        CGPoint(x: min(max(p.x, 170), size.width - 170), y: max(p.y - 120, 110))
     }
 
     private func draw(in ctx: inout GraphicsContext, fit: MapFit, highlights: [RegionID: Highlight]) {
@@ -126,43 +165,46 @@ public struct MapView: View {
         ctx.draw(Text(text).font(.system(size: size * 0.62, weight: .bold)).foregroundStyle(.black), at: p)
     }
 
-    /// Unit chips (grouped by type, with counts) and village houses, in rows
-    /// under the region number.
+    /// Loose units as tiles (grouped by type, with counts), armies as a
+    /// heap under their token, then village houses, in rows under the
+    /// region number.
     private func drawPieces(_ ctx: inout GraphicsContext, region: RegionID, at c: CGPoint, chip: CGFloat) {
-        let s = model.state
-        struct Chip { let faction: FactionID; let type: UnitType; let count: Int; let label: String; let selected: Bool }
-        var chips: [Chip] = []
-        for f in FactionID.allCases {
-            let units = s.units(in: region).filter { $0.faction == f }
-            let groups = Dictionary(grouping: units, by: \.type).sorted { $0.key.rawValue < $1.key.rawValue }
-            for (type, us) in groups {
-                let label = Palette.short(type) + (us.count > 1 ? "\(us.count)" : "")
-                chips.append(Chip(faction: f, type: type, count: us.count, label: label,
-                                  selected: us.contains { model.selectedUnits.contains($0.id) }))
+        enum Piece { case tiles(FactionID, UnitType, Int, Bool), army(Stack, Bool) }
+        var pieces: [Piece] = []
+        for st in model.stacks where st.region == region {
+            let selected = st.units.contains { model.selectedUnits.contains($0.id) }
+            if st.token != nil {
+                pieces.append(.army(st, selected))
+            } else {
+                for g in st.groups {
+                    let sel = st.units.contains { $0.type == g.type && model.selectedUnits.contains($0.id) }
+                    pieces.append(.tiles(st.faction, g.type, g.count, sel))
+                }
             }
         }
-        let villages = s.villages(in: region)
+        let villages = model.state.villages(in: region)
         let perRow = 3
         let w = chip * 1.45, h = chip * 0.82
-        let rows = (chips.count + perRow - 1) / perRow
-        for (i, ch) in chips.enumerated() {
+        let rows = (pieces.count + perRow - 1) / perRow
+        for (i, piece) in pieces.enumerated() {
             let row = i / perRow, col = i % perRow
-            let inRow = min(perRow, chips.count - row * perRow)
-            let x = c.x + (CGFloat(col) - CGFloat(inRow - 1) / 2) * (w + 2)
-            let y = c.y + CGFloat(row) * (h + 2) + h * 0.2
+            let inRow = min(perRow, pieces.count - row * perRow)
+            let x = c.x + (CGFloat(col) - CGFloat(inRow - 1) / 2) * (w + 4)
+            let y = c.y + CGFloat(row) * (h + 4) + h * 0.2
             let rect = CGRect(x: x - w / 2, y: y - h / 2, width: w, height: h)
-            let shape = Path(roundedRect: rect, cornerRadius: 3)
-            if let art = model.art, let figure = art.unit(ch.faction, ch.type) {
-                artChip(&ctx, ch.faction, ch.type, figure: figure, count: ch.count, in: rect, art: art)
-            } else {
-                ctx.fill(shape, with: .color(Palette.faction(ch.faction)))
-                ctx.draw(Text(ch.label).font(.system(size: h * 0.62, weight: .bold)).foregroundStyle(.white),
-                         at: CGPoint(x: x, y: y))
+            switch piece {
+            case .tiles(let f, let t, let n, let sel):
+                tile(&ctx, f, t, in: rect)
+                if n > 1 { countBadge(&ctx, n, rect: rect) }
+                if sel { ctx.stroke(Path(roundedRect: rect, cornerRadius: 3), with: .color(Palette.selected), lineWidth: 2.5) }
+            case .army(let st, let sel):
+                // A little bigger, and nudged right to make room for the token.
+                let big = rect.insetBy(dx: -w * 0.08, dy: -h * 0.08).offsetBy(dx: h * 0.4, dy: 0)
+                heap(&ctx, st, in: big, selected: sel)
             }
-            if ch.selected { ctx.stroke(shape, with: .color(Palette.selected), lineWidth: 2.5) }
         }
-        // Houses below the chips.
-        let vy = c.y + CGFloat(rows) * (h + 2) + h * 0.45
+        // Houses below the pieces.
+        let vy = c.y + CGFloat(rows) * (h + 4) + h * 0.45
         for (i, v) in villages.enumerated() {
             let x = c.x + (CGFloat(i) - CGFloat(villages.count - 1) / 2) * (chip * 0.75)
             if let icon = model.art?.village(v.faction) {
@@ -174,10 +216,54 @@ public struct MapView: View {
         }
     }
 
-    /// A tile in its faction's colour with the unit's figure, and a count
-    /// badge for stacks. Citadels are their round token.
+    /// One tile: the art if there is some, else a coloured chip with a label.
+    private func tile(_ ctx: inout GraphicsContext, _ f: FactionID, _ t: UnitType, in rect: CGRect) {
+        if let art = model.art, let figure = art.unit(f, t) {
+            artChip(&ctx, f, t, figure: figure, in: rect, art: art)
+        } else {
+            ctx.fill(Path(roundedRect: rect, cornerRadius: 3), with: .color(Palette.faction(f)))
+            ctx.draw(Text(Palette.short(t)).font(.system(size: rect.height * 0.62, weight: .bold)).foregroundStyle(.white),
+                     at: CGPoint(x: rect.midX, y: rect.midY))
+        }
+    }
+
+    /// An army: a few tiles heaped under its lead unit, the army token on
+    /// the left and the unit count on the right.
+    private func heap(_ ctx: inout GraphicsContext, _ st: Stack, in rect: CGRect, selected: Bool) {
+        let colour = model.art?.tileColour(st.faction) ?? Palette.faction(st.faction)
+        let layers = min(3, st.units.count)
+        let step = rect.height * 0.14
+        for k in stride(from: layers - 1, through: 1, by: -1) {
+            let r = rect.offsetBy(dx: CGFloat(k) * step, dy: -CGFloat(k) * step)
+            let shape = Path(roundedRect: r, cornerRadius: r.height * 0.18)
+            ctx.fill(shape, with: .color(colour))
+            ctx.stroke(shape, with: .color(.black.opacity(0.4)), lineWidth: 0.6)
+        }
+        tile(&ctx, st.faction, st.lead, in: rect)
+        if selected { ctx.stroke(Path(roundedRect: rect, cornerRadius: 3), with: .color(Palette.selected), lineWidth: 2.5) }
+        armyToken(&ctx, st, centre: CGPoint(x: rect.minX - rect.height * 0.1, y: rect.midY), size: rect.height * 0.95)
+        countBadge(&ctx, st.units.count, rect: rect.offsetBy(dx: CGFloat(layers - 1) * step, dy: -CGFloat(layers - 1) * step))
+    }
+
+    private func armyToken(_ ctx: inout GraphicsContext, _ st: Stack, centre: CGPoint, size: CGFloat) {
+        let r = CGRect(x: centre.x - size / 2, y: centre.y - size / 2, width: size, height: size)
+        ctx.fill(Path(ellipseIn: r), with: .color(Palette.faction(st.faction)))
+        ctx.stroke(Path(ellipseIn: r), with: .color(.white), lineWidth: 1.5)
+        ctx.draw(Text(st.token ?? "").font(.system(size: size * 0.6, weight: .heavy)).foregroundStyle(.white), at: centre)
+    }
+
+    private func countBadge(_ ctx: inout GraphicsContext, _ n: Int, rect: CGRect) {
+        let d = rect.height * 0.62
+        let badge = CGRect(x: rect.maxX - d * 0.7, y: rect.minY - d * 0.3, width: d, height: d)
+        ctx.fill(Path(ellipseIn: badge), with: .color(.black.opacity(0.8)))
+        ctx.draw(Text("\(n)").font(.system(size: d * 0.68, weight: .bold)).foregroundStyle(.white),
+                 at: CGPoint(x: badge.midX, y: badge.midY))
+    }
+
+    /// A tile in its faction's colour with the unit's figure. Citadels are
+    /// their round token.
     private func artChip(_ ctx: inout GraphicsContext, _ f: FactionID, _ t: UnitType, figure: Sprite,
-                         count: Int, in rect: CGRect, art: Art) {
+                         in rect: CGRect, art: Art) {
         if t == .citadel {
             ctx.draw(figure.image, in: figure.fit(in: rect.insetBy(dx: 0, dy: -rect.height * 0.15)))
         } else {
@@ -185,13 +271,6 @@ public struct MapView: View {
             ctx.fill(shape, with: .color(art.tileColour(f) ?? Palette.faction(f)))
             ctx.stroke(shape, with: .color(.black.opacity(0.35)), lineWidth: 0.6)
             ctx.draw(figure.image, in: figure.fit(in: rect.insetBy(dx: rect.width * 0.12, dy: rect.height * 0.06)))
-        }
-        if count > 1 {
-            let d = rect.height * 0.62
-            let badge = CGRect(x: rect.maxX - d * 0.7, y: rect.minY - d * 0.3, width: d, height: d)
-            ctx.fill(Path(ellipseIn: badge), with: .color(.black.opacity(0.8)))
-            ctx.draw(Text("\(count)").font(.system(size: d * 0.68, weight: .bold)).foregroundStyle(.white),
-                     at: CGPoint(x: badge.midX, y: badge.midY))
         }
     }
 

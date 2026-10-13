@@ -75,7 +75,9 @@ public final class GameModel {
     public let engine: Engine
     public let you = FactionID.horseLords
     public let describer: Describer
-    public private(set) var state: GameState
+    public private(set) var state: GameState {
+        didSet { refreshStacks() }
+    }
     public private(set) var history: [GameState] = []
     public private(set) var legal: [Action] = []
     public private(set) var log: [LogLine] = []
@@ -95,14 +97,35 @@ public final class GameModel {
     /// Region outlines for drawing and tapping, built once.
     @ObservationIgnored let shapes: MapShapes
     @ObservationIgnored public let art: Art?
+    /// The units on the map, grouped for drawing; armies get tokens.
+    public private(set) var stacks: [Stack] = []
+    /// Which units each army letter was on last time, so letters stick.
+    @ObservationIgnored private var armyLetters: [FactionID: [String: Set<Int>]] = [:]
+    /// Map space no piece can ever be in (for Mission 1, everything north of
+    /// the Hill Folk line), where the army boards float.
+    @ObservationIgnored public let boardArea: CGRect?
+    /// A region being held down, shown expanded.
+    public var peek: RegionID?
 
     public init(engine: Engine, state: GameState, art: Art? = nil) {
         self.engine = engine
         self.art = art
-        shapes = MapShapes(engine.map)
+        let shapes = MapShapes(engine.map)
+        self.shapes = shapes
         self.state = state
         describer = Describer(engine: engine, you: .horseLords)
         legal = engine.legalActions(in: state)
+        let used = Set(engine.map.regionIDs.filter {
+            engine.script.isEnterable($0, in: state) || !state.units(in: $0).isEmpty || !state.villages(in: $0).isEmpty
+        })
+        boardArea = shapes.freeRect(blocked: used)
+        refreshStacks()
+    }
+
+    private func refreshStacks() {
+        let made = Self.makeStacks(state, previous: armyLetters)
+        stacks = made.stacks
+        armyLetters = made.letters
     }
 
     public var map: MapGraph { engine.map }

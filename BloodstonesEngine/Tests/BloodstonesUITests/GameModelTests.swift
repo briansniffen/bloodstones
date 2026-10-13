@@ -152,3 +152,46 @@ import Testing
         #expect(saved == 2)
     }
 }
+
+@MainActor @Suite struct StackTests {
+    @Test func armiesGetTokens() throws {
+        let m = try makeModel()
+        let tokens = m.armyStacks.map { "\($0.faction.rawValue):\($0.token!)" }
+        #expect(tokens == ["dragonRiders:1", "dragonRiders:2", "dragonRiders:3", "horseLords:A"])
+        let a = try #require(m.armyStacks.last)
+        #expect(a.region == 61 && !a.units.contains { $0.type == .citadel })
+        // The citadel stays on the map as its own piece.
+        #expect(m.stacks.contains { $0.region == 61 && $0.token == nil && $0.units.map(\.type) == [.citadel] })
+    }
+
+    @Test func letterFollowsTheArmy() throws {
+        let m = try makeModel()
+        m.perform(.endPhase)
+        m.tap(61)
+        m.tap(53)
+        m.confirmPending()
+        let a = try #require(m.armyStacks.first { $0.faction == .horseLords })
+        #expect(a.token == "A" && a.region == 53)
+    }
+
+    @Test func lettersStickWhenAnotherArmyForms() throws {
+        // Dragon Rider units with the mission's armies dissolved, so they
+        // group like anyone else's.
+        var s = try makeModel().state
+        guard case .dragonHunt(var mission) = s.mission else { Issue.record("not Mission 1"); return }
+        mission.armies = [:]
+        s.mission = .dragonHunt(mission)
+        let ids = s.units(of: .dragonRiders).filter { ![.dragon, .citadel].contains($0.type) }.prefix(6).map(\.id)
+        for (i, id) in ids.enumerated() {
+            s.units[s.units.firstIndex { $0.id == id }!].region = i < 3 ? 70 : 10
+        }
+        let prev: [FactionID: [String: Set<Int>]] = [.dragonRiders: ["A": Set(ids.prefix(3))]]
+        // A new army forms in a lower-numbered region; the old one keeps "A".
+        let made = GameModel.makeStacks(s, previous: prev)
+        let tokens = Dictionary(uniqueKeysWithValues: made.stacks
+            .filter { $0.faction == .dragonRiders && $0.token != nil && [10, 70].contains($0.region) }
+            .map { ($0.region, $0.token!) })
+        #expect(tokens[70] == "A" && tokens[10] != "A")
+        #expect(made.letters[.dragonRiders]?["A"] == Set(ids.prefix(3)))
+    }
+}

@@ -72,6 +72,10 @@ import SwiftUI
     let m3 = GameModel(engine: data.engine, state: start, art: data.art)
     for _ in 0..<9 where m3.endPhaseAvailable { m3.perform(.endPhase) }
     render(m3, to: out.appendingPathComponent("3-later.png"))
+
+    // 4. Holding a region: everything in it, enlarged.
+    m3.peek = m3.armyStacks.first?.region
+    render(m3, to: out.appendingPathComponent("4-peek.png"))
 }
 
 try MainActor.assumeIsolated { try main() }
