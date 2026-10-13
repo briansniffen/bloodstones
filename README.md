@@ -32,8 +32,10 @@ That writes `art/`, which the Xcode project bundles (and `App/testflight.sh`
 requires). Boards are the key-map pages at 300 dpi with a 110 px frame
 margin, so map coordinates line up with `data/maps`. Tile figures,
 citadels and village icons come from the faction cards (rulebook pp. 24–26)
-at 600 dpi, with the tile colour recorded in `art/art.json`; the app draws
-the tile itself so it can show the real pip value. `--check DIR` writes
+at 600 dpi, with the tile colour recorded in `art/art.json`; map pieces draw
+the figure on a tile of that colour. The hand shows whole tiles as printed
+(`art/tiles/`): the knots on the left are the build cost and the marks on
+the right are the pips, and each card sample matches `data/factions.json`. `--check DIR` writes
 contact sheets: every board with its region outlines, and every cut-out.
 Chaos Horde tiles are low-resolution bitmaps in the rulebook. The rest are
 vector art and come out clean.

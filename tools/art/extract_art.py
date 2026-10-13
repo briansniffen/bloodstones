@@ -9,7 +9,9 @@
 Writes art/ (gitignored, like the PDFs):
   maps/<mapId>.jpg      the board at 300 dpi, the playable area plus a margin
   units/<faction>/<unit>.png   the figure from each faction-card tile, with
-                        a transparent background (the app draws the tile)
+                        a transparent background (map pieces)
+  tiles/<faction>/<unit>.png   the whole tile as printed, with its build-cost
+                        knots (left) and pip marks (right); blank.png too
   citadels/<faction>.png, villages/<faction>.png
   cards/<faction>.jpg   the faction cards (rulebook pp. 24-26)
   art.json              tile colours per faction and each map's inset
@@ -175,6 +177,36 @@ def cutout(im, arr, found, round_=False):
     return crop
 
 
+def whole_tile(im, tile):
+    """The whole tile, build-cost knots and pip marks included, with its
+    rounded corners made clear."""
+    crop = im.crop(tile).convert("RGBA")
+    alpha = Image.new("L", crop.size, 0)
+    r = int(crop.height * 0.17)
+    ImageDraw.Draw(alpha).rounded_rectangle((0, 0, crop.width - 1, crop.height - 1), radius=r, fill=255)
+    crop.putalpha(alpha)
+    return crop
+
+
+def find_blanks(arr, card, bg, found):
+    """Blank tiles: the card prints them with a count but no label. They're
+    tile-coloured rectangles the size of the labelled tiles, found nowhere else."""
+    x0, y0, x1, y1 = card
+    win = arr[y0:y1, x0:x1]
+    lab, n = ndimage.label(dist(win, bg) < 18)
+    w = np.median([t[2] - t[0] for t in found])
+    h = np.median([t[3] - t[1] for t in found])
+    blanks = []
+    for k, sl in enumerate(ndimage.find_objects(lab), start=1):
+        bw, bh = sl[1].stop - sl[1].start, sl[0].stop - sl[0].start
+        if abs(bw - w) > 0.1 * w or abs(bh - h) > 0.1 * h:
+            continue
+        box = (x0 + sl[1].start, y0 + sl[0].start, x0 + sl[1].stop, y0 + sl[0].stop)
+        if not any(box[0] < t[2] and t[0] < box[2] and box[1] < t[3] and t[1] < box[3] for t in found):
+            blanks.append(box)
+    return blanks
+
+
 def hexcol(c):
     return "#%02x%02x%02x" % tuple(int(round(v)) for v in c)
 
@@ -193,7 +225,9 @@ def extract_cards(pdfs, out):
         card.convert("RGB").save(out / f"cards/{faction}.jpg", quality=85)
         paper = mode_colour(arr[int(cy0 * s):int(cy1 * s), int(cx0 * s):int(cx1 * s)])
         (out / f"units/{faction}").mkdir(parents=True, exist_ok=True)
+        (out / f"tiles/{faction}").mkdir(parents=True, exist_ok=True)
         tile_bg = None
+        tiles_found = []
         for x, y, _, _, text in inside:
             unit = LABELS.get(text)
             if unit is None:
@@ -206,7 +240,14 @@ def extract_cards(pdfs, out):
             box = tuple(int(v * s) for v in (x - 6, y + 9, x + 52, y + 42))
             tile, bg = find_tile(arr, box, paper)
             figure(arr, tile, bg).save(out / f"units/{faction}/{unit}.png")
+            whole_tile(im, tile).save(out / f"tiles/{faction}/{unit}.png")
+            tiles_found.append(tile)
             tile_bg = tile_bg if tile_bg is not None else bg
+        blanks = find_blanks(arr, tuple(int(v * s) for v in (cx0, cy0, cx1, cy1)), tile_bg, tiles_found)
+        if blanks:
+            whole_tile(im, blanks[0]).save(out / f"tiles/{faction}/blank.png")
+        else:
+            print(f"no blank tile found for {faction}")
         # Village icon: right of the "20" beside the faction name.
         twenty = [w for w in inside if w[4] == "20" and w[1] < cy0 + 45]
         entry = {"tile": hexcol(tile_bg)}
@@ -219,7 +260,7 @@ def extract_cards(pdfs, out):
 
 
 def contact_sheet(out, check):
-    imgs = sorted(p for d in ("units", "citadels", "villages") for p in (out / d).rglob("*.png"))
+    imgs = sorted(p for d in ("tiles", "units", "citadels", "villages") for p in (out / d).rglob("*.png"))
     cell = 140
     cols = 10
     sheet = Image.new("RGB", (cols * cell, ((len(imgs) + cols - 1) // cols) * (cell + 16)), "#888")
@@ -239,7 +280,7 @@ def main():
     ap.add_argument("--out", default=ROOT / "art", type=Path)
     ap.add_argument("--check", type=Path)
     a = ap.parse_args()
-    for d in ("maps", "units", "citadels", "villages", "cards"):
+    for d in ("maps", "units", "tiles", "citadels", "villages", "cards"):
         (a.out / d).mkdir(parents=True, exist_ok=True)
     maps = {m: extract_map(a.pdfs, a.out, m) for m in MAPS}
     factions = extract_cards(a.pdfs, a.out)

@@ -182,7 +182,7 @@ struct HandView: View {
                     Text("Picked: \(model.paymentPips) pips").font(.caption).foregroundStyle(.secondary)
                 }
             }
-            let columns = [GridItem(.adaptive(minimum: 76), spacing: 6)]
+            let columns = [GridItem(.adaptive(minimum: model.art == nil ? 76 : 150), spacing: 8)]
             LazyVGrid(columns: columns, alignment: .leading, spacing: 6) {
                 ForEach(model.hand, id: \.id) { tile in
                     TileCard(model: model, tile: tile)
@@ -206,8 +206,10 @@ struct TileCard: View {
                 Text("\(tile.pips)").font(.title2.weight(.bold).monospacedDigit())
             }
             Text(model.describer.name(tile.unit)).font(.caption2).lineLimit(1).minimumScaleFactor(0.7)
-            Text(tile.buildCost.map { String(repeating: "▪︎", count: $0).isEmpty ? "free" : String(repeating: "▪︎", count: $0) } ?? " ")
-                .font(.caption2).foregroundStyle(.secondary)
+            if model.art?.tile(tile.faction, tile.unit) == nil {
+                Text(tile.buildCost.map { String(repeating: "▪︎", count: $0).isEmpty ? "free" : String(repeating: "▪︎", count: $0) } ?? " ")
+                    .font(.caption2).foregroundStyle(.secondary)
+            }
             if model.canBuild(tile) {
                 Button(building ? "Building" : "Build") { model.toggleBuild(tile.id) }
                     .buttonStyle(PanelButtonStyle(prominent: building, tint: Palette.faction(.horseLords)))
@@ -233,8 +235,20 @@ struct TileFace: View {
     let art: Art
 
     var body: some View {
+        if let printed = art.tile(tile.faction, tile.unit) {
+            // The tile as printed: its knots show the build cost, its marks the pips.
+            printed.image.resizable()
+                .aspectRatio(printed.size.width / printed.size.height, contentMode: .fit)
+                .shadow(color: .black.opacity(0.25), radius: 1.5, y: 1)
+                .accessibilityLabel("\(tile.pips) pips")
+        } else {
+            drawn
+        }
+    }
+
+    private var drawn: some View {
         let colour = art.tileColour(tile.faction) ?? Palette.faction(tile.faction)
-        RoundedRectangle(cornerRadius: 7)
+        return RoundedRectangle(cornerRadius: 7)
             .fill(colour)
             .overlay {
                 if let figure = art.unit(tile.faction, tile.unit) {

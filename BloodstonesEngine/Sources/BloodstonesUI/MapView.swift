@@ -147,7 +147,7 @@ public struct MapView: View {
             if highlights[id] == .target { ctx.stroke(path, with: .color(.white), lineWidth: 4) }
         }
         // Numbers (printed on the board art), costs and pieces.
-        let chip = chipSize(fit)
+        let chip = markSize(fit)
         for id in model.map.regionIDs {
             let c = fit.toView(shapes.centres[id]!)
             if board == nil {
@@ -168,7 +168,10 @@ public struct MapView: View {
         }
     }
 
-    func chipSize(_ fit: MapFit) -> CGFloat { max(13, (model.art?.map == nil ? 30 : 40) * fit.scale) }
+    /// Size of cost badges and village houses.
+    func markSize(_ fit: MapFit) -> CGFloat { max(13, (model.art?.map == nil ? 30 : 40) * fit.scale) }
+    /// Size of unit tiles: big enough to read the figures.
+    func chipSize(_ fit: MapFit) -> CGFloat { markSize(fit) * 2.5 }
 
     enum Piece {
         case tiles(FactionID, UnitType, count: Int, selected: Bool)
@@ -180,7 +183,7 @@ public struct MapView: View {
     /// (grouped by type), armies as a heap, in rows under the region number
     /// (under the printed number circle on the board art), then villages.
     func layout(region: RegionID, fit: MapFit) -> [(piece: Piece, rect: CGRect)] {
-        let chip = chipSize(fit)
+        let chip = chipSize(fit), mark = markSize(fit)
         var c = fit.toView(shapes.centres[region]!)
         if model.art?.map != nil { c.y += 30 * fit.scale + chip * 0.45 }
         var pieces: [Piece] = []
@@ -212,10 +215,10 @@ public struct MapView: View {
         }
         let rows = (pieces.count + perRow - 1) / perRow
         let villages = model.state.villages(in: region)
-        let vy = c.y + CGFloat(rows) * (h + 4) + h * 0.45
-        let size = chip * 0.7
+        let size = mark * 0.7
+        let vy = c.y + CGFloat(rows) * (h + 4) - h * 0.3 + size * 0.6
         for (i, v) in villages.enumerated() {
-            let x = c.x + (CGFloat(i) - CGFloat(villages.count - 1) / 2) * (chip * 0.75)
+            let x = c.x + (CGFloat(i) - CGFloat(villages.count - 1) / 2) * (mark * 0.75)
             out.append((.village(v.faction), CGRect(x: x - size / 2, y: vy - size / 2, width: size, height: size)))
         }
         return out

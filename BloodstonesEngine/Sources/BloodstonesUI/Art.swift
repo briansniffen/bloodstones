@@ -33,6 +33,8 @@ public struct Art: Sendable {
 
     public let map: MapArt?
     let units: [FactionID: [UnitType: Sprite]]
+    /// Whole tiles as printed: build-cost knots on the left, pips on the right.
+    let tiles: [FactionID: [UnitType: Sprite]]
     let citadels: [FactionID: Sprite]
     let villages: [FactionID: Sprite]
     public let cards: [FactionID: Sprite]
@@ -42,6 +44,7 @@ public struct Art: Sendable {
         t == .citadel ? citadels[f] : units[f]?[t]
     }
     func village(_ f: FactionID) -> Sprite? { villages[f] }
+    func tile(_ f: FactionID, _ t: UnitType) -> Sprite? { tiles[f]?[t] }
     func tileColour(_ f: FactionID) -> Color? { tileColours[f] }
 
     private struct Manifest: Decodable {
@@ -61,12 +64,13 @@ public struct Art: Sendable {
             return Sprite(image: Image(decorative: cg, scale: 1),
                           size: CGSize(width: cg.width, height: cg.height))
         }
-        var units: [FactionID: [UnitType: Sprite]] = [:]
+        var units: [FactionID: [UnitType: Sprite]] = [:], tiles: [FactionID: [UnitType: Sprite]] = [:]
         var citadels: [FactionID: Sprite] = [:], villages: [FactionID: Sprite] = [:], cards: [FactionID: Sprite] = [:]
         var colours: [FactionID: Color] = [:]
         for f in FactionID.allCases {
             for t in UnitType.allCases {
                 if let s = sprite("units/\(f.rawValue)/\(t.rawValue).png") { units[f, default: [:]][t] = s }
+                if let s = sprite("tiles/\(f.rawValue)/\(t.rawValue).png") { tiles[f, default: [:]][t] = s }
             }
             citadels[f] = sprite("citadels/\(f.rawValue).png")
             villages[f] = sprite("villages/\(f.rawValue).png")
@@ -76,7 +80,7 @@ public struct Art: Sendable {
         let map = m.maps[mapId].flatMap { e in
             sprite(e.file).map { MapArt(sprite: $0, inset: CGPoint(x: e.inset[0], y: e.inset[1])) }
         }
-        return Art(map: map, units: units, citadels: citadels, villages: villages, cards: cards, tileColours: colours)
+        return Art(map: map, units: units, tiles: tiles, citadels: citadels, villages: villages, cards: cards, tileColours: colours)
     }
 }
 
