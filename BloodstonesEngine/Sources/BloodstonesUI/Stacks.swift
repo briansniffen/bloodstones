@@ -24,6 +24,11 @@ public struct Stack: Identifiable, Equatable, Sendable {
         return order.first(where: types.contains) ?? units[0].type
     }
 
+    /// The units, lead first, then by type, as they're laid out on a board.
+    var ordered: [MapUnit] {
+        units.sorted { ($0.type == lead ? 0 : 1, $0.type.rawValue, $0.id) < ($1.type == lead ? 0 : 1, $1.type.rawValue, $1.id) }
+    }
+
     /// (type, count), most important first.
     var groups: [(type: UnitType, count: Int)] {
         Dictionary(grouping: units, by: \.type)

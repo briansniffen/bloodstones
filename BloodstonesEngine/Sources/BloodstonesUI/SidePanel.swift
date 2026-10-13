@@ -201,7 +201,7 @@ struct TileCard: View {
         let building = model.buildTile == tile.id
         VStack(spacing: 3) {
             if let art = model.art {
-                TileFace(tile: tile, art: art)
+                TileFace(tile: tile, art: art, lifted: picked || building)
             } else {
                 Text("\(tile.pips)").font(.title2.weight(.bold).monospacedDigit())
             }
@@ -233,13 +233,15 @@ struct TileCard: View {
 struct TileFace: View {
     let tile: Tile
     let art: Art
+    var lifted = false
 
     var body: some View {
-        if let printed = art.tile(tile.faction, tile.unit) {
-            // The tile as printed: its knots show the build cost, its marks the pips.
-            printed.image.resizable()
-                .aspectRatio(printed.size.width / printed.size.height, contentMode: .fit)
-                .shadow(color: .black.opacity(0.25), radius: 1.5, y: 1)
+        if art.tile(tile.faction, tile.unit) != nil {
+            // The tile as printed: its knots show the build cost, its marks
+            // the pips. Picked tiles lift off the table.
+            PhysicalTile(art: art, faction: tile.faction, type: tile.unit, height: 66,
+                         tilt: TileLook.tilt(tile.id, max: 1.2), lifted: lifted)
+                .padding(.top, 8)
                 .accessibilityLabel("\(tile.pips) pips")
         } else {
             drawn

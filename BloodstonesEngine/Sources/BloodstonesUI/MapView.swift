@@ -200,7 +200,7 @@ public struct MapView: View {
         }
         var out: [(piece: Piece, rect: CGRect)] = []
         let perRow = 3
-        let w = chip * 1.45, h = chip * 0.82
+        let w = chip * 1.45, h = w / TileLook.aspect
         for (i, piece) in pieces.enumerated() {
             let row = i / perRow, col = i % perRow
             let inRow = min(perRow, pieces.count - row * perRow)
@@ -235,14 +235,23 @@ public struct MapView: View {
         for (piece, rect) in layout(region: region, fit: fit) {
             switch piece {
             case .tiles(let f, let t, let n, let sel):
-                tile(&ctx, f, t, in: rect)
-                if n > 1 { countBadge(&ctx, n, rect: rect) }
-                if sel { ctx.stroke(Path(roundedRect: rect, cornerRadius: 3), with: .color(Palette.selected), lineWidth: 2.5) }
+                // Several of a type lie in a little pile.
+                let seed = region * 97 + t.rawValue.utf8.reduce(0) { $0 &* 31 &+ Int($1) }
+                let step = rect.height * 0.14
+                for k in stride(from: min(n, 3) - 1, through: 1, by: -1) {
+                    physicalTile(&ctx, f, t, in: rect.offsetBy(dx: CGFloat(k) * step, dy: -CGFloat(k) * step),
+                                 tilt: TileLook.tilt(seed + k), faceless: true)
+                }
+                physicalTile(&ctx, f, t, in: rect, tilt: TileLook.tilt(seed), selected: sel)
+                if n > 1 { countBadge(&ctx, n, rect: rect.offsetBy(dx: CGFloat(min(n, 3) - 1) * step, dy: -CGFloat(min(n, 3) - 1) * step)) }
             case .army(let st, let sel):
                 heap(&ctx, st, in: rect, selected: sel)
             case .village(let f):
                 if let icon = model.art?.village(f) {
-                    ctx.draw(icon.image, in: icon.fit(in: rect))
+                    ctx.drawLayer { l in
+                        l.addFilter(.shadow(color: .black.opacity(0.35), radius: 1, x: 0, y: 1))
+                        l.draw(icon.image, in: icon.fit(in: rect))
+                    }
                 } else {
                     house(&ctx, at: CGPoint(x: rect.midX, y: rect.midY), size: rect.width * 0.86, color: Palette.faction(f))
                 }
@@ -250,40 +259,80 @@ public struct MapView: View {
         }
     }
 
-    /// One tile: the art if there is some, else a coloured chip with a label.
-    private func tile(_ ctx: inout GraphicsContext, _ f: FactionID, _ t: UnitType, in rect: CGRect) {
-        if let art = model.art, let figure = art.unit(f, t) {
-            artChip(&ctx, f, t, figure: figure, in: rect, art: art)
-        } else {
-            ctx.fill(Path(roundedRect: rect, cornerRadius: 3), with: .color(Palette.faction(f)))
-            ctx.draw(Text(Palette.short(t)).font(.system(size: rect.height * 0.62, weight: .bold)).foregroundStyle(.white),
-                     at: CGPoint(x: rect.midX, y: rect.midY))
+    /// One tile as a piece of card: the printed tile (or a stand-in), the
+    /// edge showing its thickness, a shadow, and a slight hand-placed tilt.
+    /// A faceless tile is one lying under others, only its colour showing.
+    private func physicalTile(_ ctx: inout GraphicsContext, _ f: FactionID, _ t: UnitType, in rect: CGRect,
+                              tilt: Angle, selected: Bool = false, faceless: Bool = false) {
+        let art = model.art
+        ctx.drawLayer { l in
+            l.translateBy(x: rect.midX, y: rect.midY)
+            l.rotate(by: tilt)
+            let colour = TileLook.colour(art, f)
+            l.addFilter(.shadow(color: .black.opacity(0.35), radius: rect.height * 0.07, x: 0, y: rect.height * 0.06))
+            if t == .citadel {
+                let d = rect.height * 1.2
+                let r = CGRect(x: -d / 2, y: -d / 2, width: d, height: d)
+                let under = Path(ellipseIn: r.offsetBy(dx: 0, dy: d * TileLook.thickness))
+                l.fill(under, with: .color(colour))
+                l.fill(under, with: .color(.black.opacity(0.4)))
+                if let token = art?.unit(f, .citadel) { l.draw(token.image, in: r) } else {
+                    l.fill(Path(ellipseIn: r), with: .color(Palette.faction(f)))
+                }
+                if selected { l.stroke(Path(ellipseIn: r), with: .color(Palette.selected), lineWidth: 2.5) }
+                return
+            }
+            let r = CGRect(x: -rect.width / 2, y: -rect.height / 2, width: rect.width, height: rect.height)
+            let cr = TileLook.cornerRadius(r.height)
+            let shape = Path(roundedRect: r, cornerRadius: cr)
+            let under = Path(roundedRect: r.offsetBy(dx: 0, dy: r.height * TileLook.thickness), cornerRadius: cr)
+            l.fill(under, with: .color(colour))
+            l.fill(under, with: .color(.black.opacity(0.4)))
+            if faceless {
+                l.fill(shape, with: .color(colour))
+            } else if let printed = art?.tile(f, t) {
+                l.draw(printed.image, in: r)
+            } else if let figure = art?.unit(f, t) {
+                l.fill(shape, with: .color(colour))
+                l.draw(figure.image, in: figure.fit(in: r.insetBy(dx: r.width * 0.14, dy: r.height * 0.06)))
+            } else {
+                l.fill(shape, with: .color(Palette.faction(f)))
+                l.draw(Text(Palette.short(t)).font(.system(size: r.height * 0.6, weight: .bold)).foregroundStyle(.white),
+                       at: .zero)
+            }
+            l.stroke(shape, with: .color(.black.opacity(0.25)), lineWidth: 0.6)
+            if selected { l.stroke(shape, with: .color(Palette.selected), lineWidth: 2.5) }
         }
     }
 
     /// An army: a few tiles heaped under its lead unit, the army token on
     /// the left and the unit count on the right.
     private func heap(_ ctx: inout GraphicsContext, _ st: Stack, in rect: CGRect, selected: Bool) {
-        let colour = model.art?.tileColour(st.faction) ?? Palette.faction(st.faction)
         let layers = min(3, st.units.count)
         let step = rect.height * 0.14
+        let lead = st.ordered[0]
         for k in stride(from: layers - 1, through: 1, by: -1) {
-            let r = rect.offsetBy(dx: CGFloat(k) * step, dy: -CGFloat(k) * step)
-            let shape = Path(roundedRect: r, cornerRadius: r.height * 0.18)
-            ctx.fill(shape, with: .color(colour))
-            ctx.stroke(shape, with: .color(.black.opacity(0.4)), lineWidth: 0.6)
+            physicalTile(&ctx, st.faction, lead.type, in: rect.offsetBy(dx: CGFloat(k) * step, dy: -CGFloat(k) * step),
+                         tilt: TileLook.tilt(st.ordered[k].id), faceless: true)
         }
-        tile(&ctx, st.faction, st.lead, in: rect)
-        if selected { ctx.stroke(Path(roundedRect: rect, cornerRadius: 3), with: .color(Palette.selected), lineWidth: 2.5) }
+        physicalTile(&ctx, st.faction, lead.type, in: rect, tilt: TileLook.tilt(lead.id), selected: selected)
         armyToken(&ctx, st, centre: CGPoint(x: rect.minX - rect.height * 0.1, y: rect.midY), size: rect.height * 0.95)
         countBadge(&ctx, st.units.count, rect: rect.offsetBy(dx: CGFloat(layers - 1) * step, dy: -CGFloat(layers - 1) * step))
     }
 
+    /// A round card token with the army's letter or number.
     private func armyToken(_ ctx: inout GraphicsContext, _ st: Stack, centre: CGPoint, size: CGFloat) {
-        let r = CGRect(x: centre.x - size / 2, y: centre.y - size / 2, width: size, height: size)
-        ctx.fill(Path(ellipseIn: r), with: .color(Palette.faction(st.faction)))
-        ctx.stroke(Path(ellipseIn: r), with: .color(.white), lineWidth: 1.5)
-        ctx.draw(Text(st.token ?? "").font(.system(size: size * 0.6, weight: .heavy)).foregroundStyle(.white), at: centre)
+        ctx.drawLayer { l in
+            let r = CGRect(x: centre.x - size / 2, y: centre.y - size / 2, width: size, height: size)
+            l.addFilter(.shadow(color: .black.opacity(0.35), radius: size * 0.07, x: 0, y: size * 0.06))
+            let under = Path(ellipseIn: r.offsetBy(dx: 0, dy: size * TileLook.thickness))
+            l.fill(under, with: .color(Palette.faction(st.faction)))
+            l.fill(under, with: .color(.black.opacity(0.4)))
+            l.fill(Path(ellipseIn: r), with: .color(Palette.faction(st.faction)))
+            l.stroke(Path(ellipseIn: r.insetBy(dx: 1, dy: 1)), with: .color(.white), lineWidth: max(1, size * 0.06))
+            l.draw(Text(st.token ?? "").font(.system(size: size * 0.6, weight: .heavy)).foregroundStyle(.white),
+                   at: CGPoint(x: r.midX, y: r.midY))
+        }
     }
 
     private func countBadge(_ ctx: inout GraphicsContext, _ n: Int, rect: CGRect) {
@@ -292,20 +341,6 @@ public struct MapView: View {
         ctx.fill(Path(ellipseIn: badge), with: .color(.black.opacity(0.8)))
         ctx.draw(Text("\(n)").font(.system(size: d * 0.68, weight: .bold)).foregroundStyle(.white),
                  at: CGPoint(x: badge.midX, y: badge.midY))
-    }
-
-    /// A tile in its faction's colour with the unit's figure. Citadels are
-    /// their round token.
-    private func artChip(_ ctx: inout GraphicsContext, _ f: FactionID, _ t: UnitType, figure: Sprite,
-                         in rect: CGRect, art: Art) {
-        if t == .citadel {
-            ctx.draw(figure.image, in: figure.fit(in: rect.insetBy(dx: 0, dy: -rect.height * 0.15)))
-        } else {
-            let shape = Path(roundedRect: rect, cornerRadius: rect.height * 0.18)
-            ctx.fill(shape, with: .color(art.tileColour(f) ?? Palette.faction(f)))
-            ctx.stroke(shape, with: .color(.black.opacity(0.35)), lineWidth: 0.6)
-            ctx.draw(figure.image, in: figure.fit(in: rect.insetBy(dx: rect.width * 0.12, dy: rect.height * 0.06)))
-        }
     }
 
     private func house(_ ctx: inout GraphicsContext, at p: CGPoint, size: CGFloat, color: Color) {

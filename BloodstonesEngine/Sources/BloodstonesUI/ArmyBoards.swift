@@ -2,7 +2,8 @@ import BloodstonesEngine
 import SwiftUI
 
 /// The army boards, floating over the part of the map no piece can reach.
-/// Each lists an army's units; tapping one is tapping the army's region.
+/// Each holds an army's tiles, as big as the space allows; tapping one is
+/// tapping the army's region.
 struct ArmyBoards: View {
     let model: GameModel
     let fit: MapFit
@@ -13,35 +14,98 @@ struct ArmyBoards: View {
             let tl = fit.toView(area.origin)
             let rect = CGRect(x: tl.x, y: tl.y, width: area.width * fit.scale, height: area.height * fit.scale)
                 .insetBy(dx: 8, dy: 8)
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 150, maximum: 240), spacing: 8, alignment: .top)],
-                      alignment: .leading, spacing: 8) {
-                ForEach(armies) { ArmyBoard(model: model, stack: $0) }
+            let plan = BoardPlan.fit(armies.map(\.units.count), in: rect.size)
+            VStack(alignment: .leading, spacing: BoardPlan.gap) {
+                ForEach(Array(stride(from: 0, to: armies.count, by: plan.columns)), id: \.self) { i in
+                    HStack(alignment: .top, spacing: BoardPlan.gap) {
+                        ForEach(armies[i..<min(i + plan.columns, armies.count)]) {
+                            ArmyBoard(model: model, stack: $0, tileHeight: plan.tileHeight, width: plan.boardWidth)
+                        }
+                    }
+                }
             }
-            .frame(width: rect.width, height: rect.height, alignment: .topLeading)
             .offset(x: rect.minX, y: rect.minY)
         }
+    }
+}
+
+/// How big the boards' tiles can be: the largest size at which every board
+/// fits the free area, a few boards to a row.
+struct BoardPlan: Equatable {
+    let columns: Int
+    let tileHeight: CGFloat
+    let boardWidth: CGFloat
+
+    static let gap: CGFloat = 10
+    static let padding: CGFloat = 10
+    static let header: CGFloat = 30
+    static let tileGap: CGFloat = 6
+
+    static func tilesPerRow(width: CGFloat, tileHeight h: CGFloat) -> Int {
+        max(1, Int((width - 2 * padding + tileGap) / (h * TileLook.aspect + tileGap)))
+    }
+
+    static func boardHeight(units: Int, width: CGFloat, tileHeight h: CGFloat) -> CGFloat {
+        let rows = (units + tilesPerRow(width: width, tileHeight: h) - 1) / tilesPerRow(width: width, tileHeight: h)
+        return 2 * padding + header + CGFloat(rows) * (h * (1 + TileLook.thickness) + tileGap)
+    }
+
+    static func fit(_ units: [Int], in size: CGSize) -> BoardPlan {
+        for h in stride(from: CGFloat(48), through: 16, by: -2) {
+            for columns in 1...max(1, min(units.count, 4)) {
+                let width = (size.width - CGFloat(columns - 1) * gap) / CGFloat(columns)
+                // Tiles lie side by side on a board, as on the physical ones.
+                let perRow = tilesPerRow(width: width, tileHeight: h)
+                guard width >= 2 * padding + h * TileLook.aspect,
+                      perRow >= min(2, units.max() ?? 1) else { continue }
+                var total: CGFloat = 0
+                for i in stride(from: 0, to: units.count, by: columns) {
+                    total += units[i..<min(i + columns, units.count)]
+                        .map { boardHeight(units: $0, width: width, tileHeight: h) }.max()! + gap
+                }
+                if total - gap <= size.height { return BoardPlan(columns: columns, tileHeight: h, boardWidth: width) }
+            }
+        }
+        let columns = max(1, min(units.count, 4))
+        return BoardPlan(columns: columns, tileHeight: 16,
+                         boardWidth: (size.width - CGFloat(columns - 1) * gap) / CGFloat(columns))
     }
 }
 
 struct ArmyBoard: View {
     let model: GameModel
     let stack: Stack
+    let tileHeight: CGFloat
+    let width: CGFloat
 
     var body: some View {
         let selected = stack.units.contains { model.selectedUnits.contains($0.id) }
-        VStack(alignment: .leading, spacing: 5) {
+        let perRow = BoardPlan.tilesPerRow(width: width, tileHeight: tileHeight)
+        let units = stack.ordered
+        VStack(alignment: .leading, spacing: BoardPlan.tileGap) {
             HStack(spacing: 6) {
-                ArmyToken(faction: stack.faction, label: stack.token ?? "")
-                Text(model.describer.name(stack.faction)).font(.caption.weight(.semibold)).lineLimit(1)
+                ArmyToken(faction: stack.faction, label: stack.token ?? "", size: 24)
+                if width >= 260 {
+                    Text(model.describer.name(stack.faction)).font(.callout.weight(.semibold)).lineLimit(1)
+                }
                 Spacer(minLength: 0)
-                Text(whereabouts).font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                Text(whereabouts).font(.callout.monospacedDigit()).foregroundStyle(.black.opacity(0.6))
+                    .fixedSize()
             }
-            UnitGroups(model: model, stack: stack, tileHeight: 20)
+            .frame(height: BoardPlan.header - BoardPlan.tileGap)
+            ForEach(Array(stride(from: 0, to: units.count, by: perRow)), id: \.self) { i in
+                HStack(spacing: BoardPlan.tileGap) {
+                    ForEach(units[i..<min(i + perRow, units.count)]) { u in
+                        PhysicalTile(art: model.art, faction: u.faction, type: u.type, height: tileHeight,
+                                     tilt: TileLook.tilt(u.id, max: 1.5),
+                                     lifted: model.selectedUnits.contains(u.id))
+                    }
+                }
+            }
         }
-        .padding(7)
-        .background(RoundedRectangle(cornerRadius: 8).fill(Color(red: 0.97, green: 0.93, blue: 0.82).opacity(0.94)))
-        .overlay(RoundedRectangle(cornerRadius: 8).stroke(selected ? Palette.selected : Palette.border.opacity(0.6),
-                                                          lineWidth: selected ? 3 : 1))
+        .padding(BoardPlan.padding)
+        .frame(width: width, alignment: .leading)
+        .background(BoardBackground(selected: selected))
         .foregroundStyle(.black)
         .contentShape(Rectangle())
         .onTapGesture { model.tap(stack.region) }
@@ -63,70 +127,17 @@ struct ArmyBoard: View {
     }
 }
 
-struct ArmyToken: View {
-    let faction: FactionID
-    let label: String
-    var size: CGFloat = 22
+/// A parchment board with a raised edge, lying on the map.
+struct BoardBackground: View {
+    var selected = false
 
     var body: some View {
-        Text(label)
-            .font(.system(size: size * 0.6, weight: .heavy))
-            .foregroundStyle(.white)
-            .frame(width: size, height: size)
-            .background(Circle().fill(Palette.faction(faction)))
-            .overlay(Circle().stroke(.white, lineWidth: 1.5))
-    }
-}
-
-/// A stack's units, one tile per type with a count.
-struct UnitGroups: View {
-    let model: GameModel
-    let stack: Stack
-    let tileHeight: CGFloat
-
-    var body: some View {
-        let groups = stack.groups.map { Group(type: $0.type, count: $0.count) }
-        FlowRow(items: groups) { g in
-            HStack(spacing: 2) {
-                UnitTile(art: model.art, faction: stack.faction, type: g.type, height: tileHeight)
-                if g.count > 1 { Text("×\(g.count)").font(.system(size: tileHeight * 0.6, weight: .semibold)) }
-            }
-        }
-    }
-
-    struct Group: Identifiable {
-        let type: UnitType
-        let count: Int
-        var id: UnitType { type }
-    }
-}
-
-/// One unit as a small tile: the art, or a coloured chip with its short name.
-struct UnitTile: View {
-    let art: Art?
-    let faction: FactionID
-    let type: UnitType
-    let height: CGFloat
-
-    var body: some View {
-        if let art, let figure = art.unit(faction, type) {
-            if type == .citadel {
-                figure.image.resizable().scaledToFit().frame(width: height * 1.3, height: height * 1.3)
-            } else {
-                RoundedRectangle(cornerRadius: height * 0.18)
-                    .fill(art.tileColour(faction) ?? Palette.faction(faction))
-                    .overlay(figure.image.resizable().scaledToFit().padding(.vertical, height * 0.06)
-                        .padding(.horizontal, height * 0.24))
-                    .overlay(RoundedRectangle(cornerRadius: height * 0.18).stroke(.black.opacity(0.3), lineWidth: 0.5))
-                    .frame(width: height * 2, height: height)
-            }
-        } else {
-            Text(Palette.short(type))
-                .font(.system(size: height * 0.55, weight: .bold))
-                .foregroundStyle(.white)
-                .frame(width: height * 2, height: height)
-                .background(RoundedRectangle(cornerRadius: 3).fill(Palette.faction(faction)))
-        }
+        let shape = RoundedRectangle(cornerRadius: 10)
+        shape.fill(LinearGradient(colors: [Color(red: 0.98, green: 0.94, blue: 0.83), Color(red: 0.91, green: 0.84, blue: 0.68)],
+                                  startPoint: .top, endPoint: .bottom))
+            .overlay(shape.inset(by: 3).stroke(Palette.border.opacity(0.35), lineWidth: 1))
+            .overlay(shape.stroke(selected ? Palette.selected : Palette.border.opacity(0.7), lineWidth: selected ? 3 : 1.5))
+            .shadow(color: .black.opacity(0.35), radius: 5, y: 3)
     }
 }
 
@@ -138,21 +149,26 @@ struct PeekView: View {
     var body: some View {
         let stacks = model.stacks.filter { $0.region == region }
         let villages = model.state.villages(in: region)
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 10) {
             Text(model.describer.region(region)).font(.headline)
             ForEach(stacks) { st in
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 6) {
                     HStack(spacing: 6) {
                         if let t = st.token { ArmyToken(faction: st.faction, label: t) }
                         Text(model.describer.name(st.faction)).font(.subheadline.weight(.semibold))
                             .foregroundStyle(Palette.faction(st.faction))
                         Text("· \(st.units.count) unit\(st.units.count == 1 ? "" : "s")").font(.caption)
                     }
-                    FlowRow(items: st.groups.map { UnitGroups.Group(type: $0.type, count: $0.count) }) { g in
-                        VStack(spacing: 2) {
-                            UnitTile(art: model.art, faction: st.faction, type: g.type, height: 34)
-                            Text(model.describer.name(g.type) + (g.count > 1 ? " ×\(g.count)" : ""))
-                                .font(.caption2)
+                    let units = st.ordered
+                    ForEach(Array(stride(from: 0, to: units.count, by: 4)), id: \.self) { i in
+                        HStack(alignment: .top, spacing: 8) {
+                            ForEach(units[i..<min(i + 4, units.count)]) { u in
+                                VStack(spacing: 3) {
+                                    PhysicalTile(art: model.art, faction: u.faction, type: u.type, height: 40,
+                                                 tilt: TileLook.tilt(u.id, max: 1.5))
+                                    Text(model.describer.name(u.type)).font(.caption2)
+                                }
+                            }
                         }
                     }
                 }
@@ -163,10 +179,8 @@ struct PeekView: View {
                     .font(.caption)
             }
         }
-        .padding(12)
+        .padding(14)
         .foregroundStyle(.black)
-        .background(RoundedRectangle(cornerRadius: 12).fill(Color(red: 0.98, green: 0.95, blue: 0.86)))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Palette.border, lineWidth: 1.5))
-        .shadow(radius: 8)
+        .background(BoardBackground())
     }
 }

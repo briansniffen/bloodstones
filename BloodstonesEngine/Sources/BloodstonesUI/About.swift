@@ -27,13 +27,13 @@ struct AboutView: View {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Bloodstones for iPad").font(.title2.weight(.semibold))
                         Text("Version \(version)").font(.caption).foregroundStyle(.secondary)
-                        Text("© 2026 Brian Sniffen and Claude.")
+                        Text("© 2026 Brian Sniffen.  Built with Claude")
                     }
                     .padding(.vertical, 4)
                 }
                 Section("The game") {
-                    Text("*Bloodstones* is designed by Martin Wallace and published by Wallace Designs. Rules © Martin Wallace 2020.")
-                    Text("Artwork by Atticus McNaughton and Leith Walton, used under licence from Martin Wallace.")
+                    Text("*Bloodstones* is designed by Martin Wallace and published by Wallace Designs. Rules © Martin Wallace 2020.  This is a hobby project in hopes of working with Wallace.")
+                    Text("Artwork by Atticus McNaughton and Leith Walton, used in hopes of a license from Martin Wallace.")
                     Text("Solo campaign by Stephen Hurn.")
                 }
                 Section("Rules") {
