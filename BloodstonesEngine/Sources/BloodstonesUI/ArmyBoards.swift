@@ -45,6 +45,12 @@ struct ArmyBoard: View {
         .foregroundStyle(.black)
         .contentShape(Rectangle())
         .onTapGesture { model.tap(stack.region) }
+        // Hold to peek at the army's region, as on the map.
+        .onLongPressGesture(minimumDuration: 0.35) {
+            model.peek = stack.region
+        } onPressingChanged: { pressing in
+            if !pressing { model.peek = nil }
+        }
     }
 
     /// "61", or for a Dragon Rider army "50 → 49" (where it goes next).

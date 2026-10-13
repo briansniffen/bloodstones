@@ -3,12 +3,16 @@ import Foundation
 import Testing
 @testable import BloodstonesUI
 
-@MainActor func makeModel(seed: UInt64 = 7) throws -> GameModel {
-    let repo = URL(fileURLWithPath: #filePath)
-        .deletingLastPathComponent().deletingLastPathComponent()
-        .deletingLastPathComponent().deletingLastPathComponent()
-    let data = try GameData.load(from: repo.appendingPathComponent("data"))
-    return GameModel(engine: data.engine, state: data.newGame(seed: seed))
+let repo = URL(fileURLWithPath: #filePath)
+    .deletingLastPathComponent().deletingLastPathComponent()
+    .deletingLastPathComponent().deletingLastPathComponent()
+
+/// `withArt` uses the repo's art/ folder when it has been extracted.
+@MainActor func makeModel(seed: UInt64 = 7, withArt: Bool = false) throws -> GameModel {
+    let art = repo.appendingPathComponent("art")
+    let data = try GameData.load(from: repo.appendingPathComponent("data"),
+                                 art: withArt && FileManager.default.fileExists(atPath: art.path) ? art : nil)
+    return GameModel(engine: data.engine, state: data.newGame(seed: seed), art: data.art)
 }
 
 @MainActor @Suite struct GameModelTests {
@@ -193,5 +197,31 @@ import Testing
             .map { ($0.region, $0.token!) })
         #expect(tokens[70] == "A" && tokens[10] != "A")
         #expect(made.letters[.dragonRiders]?["A"] == Set(ids.prefix(3)))
+    }
+}
+
+@MainActor @Suite struct HitTests {
+    /// Pressing any drawn piece means its own region, even where the piece
+    /// spills over a border.
+    @Test(arguments: [false, true]) func piecesHitTheirOwnRegion(withArt: Bool) throws {
+        let m = try makeModel(withArt: withArt)
+        for _ in 0..<6 where m.endPhaseAvailable { m.perform(.endPhase) }
+        let view = MapView(model: m)
+        let fit = MapFit(map: m.art?.map?.bounds ?? CGRect(origin: .zero, size: m.shapes.size),
+                         in: CGSize(width: 834, height: 834))
+        let regions = Set(m.stacks.map(\.region)).union(m.state.villages.map(\.region))
+        var spilled = 0
+        for r in regions {
+            for (_, rect) in view.layout(region: r, fit: fit) {
+                let p = CGPoint(x: rect.midX, y: rect.midY)
+                // Skip spots where two regions' pieces overlap.
+                let others = regions.filter { $0 != r && view.layout(region: $0, fit: fit).contains { $0.rect.contains(p) } }
+                guard others.isEmpty else { continue }
+                #expect(view.target(at: p, fit: fit) == r, "piece of \(r) at \(p)")
+                if m.shapes.region(at: fit.toMap(p)) != r { spilled += 1 }
+            }
+        }
+        // On the board art, some pieces really do lie over a neighbour.
+        if m.art != nil { #expect(spilled > 0) }
     }
 }
