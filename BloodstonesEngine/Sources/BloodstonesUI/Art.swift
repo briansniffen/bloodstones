@@ -31,7 +31,20 @@ public struct Art: Sendable {
         }
     }
 
+    /// The knotwork frame: a top-left corner (transparent inside the band)
+    /// and a top-edge tile, outer side up; other sides are these turned.
+    public struct Border: Sendable {
+        let corner: Sprite
+        let edge: Sprite
+        /// Depth of the band, in map pixels.
+        let width: CGFloat
+        /// The knot is mirror-symmetric every `unit` pixels along the edge,
+        /// so an edge stretched to a whole number of units meets its corners.
+        let unit: CGFloat
+    }
+
     public let map: MapArt?
+    public let border: Border?
     let units: [FactionID: [UnitType: Sprite]]
     /// Whole tiles as printed: build-cost knots on the left, pips on the right.
     let tiles: [FactionID: [UnitType: Sprite]]
@@ -50,8 +63,10 @@ public struct Art: Sendable {
     private struct Manifest: Decodable {
         struct MapEntry: Decodable { let file: String; let inset: [Double] }
         struct FactionEntry: Decodable { let tile: String }
+        struct BorderEntry: Decodable { let corner: String; let edge: String; let width: Double; let unit: Double }
         let maps: [String: MapEntry]
         let factions: [String: FactionEntry]
+        let border: BorderEntry?
     }
 
     /// Loads `art.json` and the images for one map from an `art/` folder.
@@ -80,7 +95,12 @@ public struct Art: Sendable {
         let map = m.maps[mapId].flatMap { e in
             sprite(e.file).map { MapArt(sprite: $0, inset: CGPoint(x: e.inset[0], y: e.inset[1])) }
         }
-        return Art(map: map, units: units, tiles: tiles, citadels: citadels, villages: villages, cards: cards, tileColours: colours)
+        let border = m.border.flatMap { b in
+            sprite(b.corner).flatMap { c in
+                sprite(b.edge).map { Border(corner: c, edge: $0, width: b.width, unit: b.unit) }
+            }
+        }
+        return Art(map: map, border: border, units: units, tiles: tiles, citadels: citadels, villages: villages, cards: cards, tileColours: colours)
     }
 }
 

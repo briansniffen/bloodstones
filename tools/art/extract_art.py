@@ -14,7 +14,10 @@ Writes art/ (gitignored, like the PDFs):
                         knots (left) and pip marks (right); blank.png too
   citadels/<faction>.png, villages/<faction>.png
   cards/<faction>.jpg   the faction cards (rulebook pp. 24-26)
-  art.json              tile colours per faction and each map's inset
+  border/corner.png, border/edge.png   the knotwork frame, to draw around
+                        any map (the Tyrant's Lament key map is cut off)
+  art.json              tile colours per faction, each map's inset, and
+                        the border's measurements
 
 --check DIR also writes contact sheets there: the maps with every region's
 displayPosition marked, and all the cut-outs.
@@ -41,6 +44,15 @@ MAPS = {
     "remains_of_the_past": ("14_Solo_Mission_14.pdf", 3, "full"),
 }
 MAP_MARGIN = 110  # px of board frame kept around the playable area
+
+# The knotwork border, measured on the Sorcerer's Crucible map image (the
+# cleanest full frame): the band is 105 px deep and the knot repeats every
+# 244/3 px, mirror-symmetric every half repeat. A corner cut at 176 px ends
+# on a symmetry point, so corners and edge tiles join seamlessly.
+BORDER_MAP = "sorcerers_crucible"
+BORDER_WIDTH = 105
+BORDER_CORNER = 176
+BORDER_TILE = 244  # three repeats
 
 RULEBOOK = "00_English_Rulebook.pdf"
 TILE_DPI = 600
@@ -274,17 +286,34 @@ def contact_sheet(out, check):
     sheet.save(check / "pieces.png")
 
 
+def extract_border(out):
+    """The top-left corner, made symmetric about its diagonal so either arm
+    can continue into an edge, with the map inside the band cut away; and
+    one top-edge tile, outer side up. Other sides are these rotated."""
+    im = Image.open(out / f"maps/{BORDER_MAP}.jpg").convert("RGBA")
+    b, c, t = BORDER_WIDTH, BORDER_CORNER, BORDER_TILE
+    corner = np.asarray(im.crop((0, 0, c, c))).copy()
+    lower = np.tril_indices(c, -1)
+    corner[lower] = corner.transpose(1, 0, 2)[lower]
+    corner[b:, b:, 3] = 0
+    Image.fromarray(corner).save(out / "border/corner.png", optimize=True)
+    im.crop((c, 0, c + t, b)).convert("RGB").save(out / "border/edge.png", optimize=True)
+    return {"corner": "border/corner.png", "edge": "border/edge.png",
+            "width": b, "unit": t / 6}
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--pdfs", default=ROOT / "pdfs", type=Path)
     ap.add_argument("--out", default=ROOT / "art", type=Path)
     ap.add_argument("--check", type=Path)
     a = ap.parse_args()
-    for d in ("maps", "units", "tiles", "citadels", "villages", "cards"):
+    for d in ("maps", "units", "tiles", "citadels", "villages", "cards", "border"):
         (a.out / d).mkdir(parents=True, exist_ok=True)
     maps = {m: extract_map(a.pdfs, a.out, m) for m in MAPS}
+    border = extract_border(a.out)
     factions = extract_cards(a.pdfs, a.out)
-    json.dump({"maps": maps, "factions": factions}, open(a.out / "art.json", "w"), indent=1)
+    json.dump({"maps": maps, "factions": factions, "border": border}, open(a.out / "art.json", "w"), indent=1)
     if a.check:
         a.check.mkdir(parents=True, exist_ok=True)
         for m, info in maps.items():

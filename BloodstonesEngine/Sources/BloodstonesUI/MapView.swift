@@ -59,8 +59,8 @@ struct MapFit {
 }
 
 /// Where the map view is looking. Zoom 1 fills the view with the playable
-/// area (the printed tracks around it are shown as overlays instead); it
-/// can zoom out as far as the whole board and in to four times that.
+/// area; it can zoom out as far as the whole board, frame and all, and in
+/// to four times that. Panning stops at the board's edge.
 struct Camera: Equatable {
     var zoom: CGFloat = 1
     /// The map point at the middle of the view; nil for the middle of the map.
@@ -68,21 +68,21 @@ struct Camera: Equatable {
 
     static let maxZoom: CGFloat = 4
 
-    /// `playable` is the regions' extent, `whole` the board image's.
+    /// `playable` is the regions' extent, `whole` the board's with its frame.
     func fit(playable: CGRect, whole: CGRect, in view: CGSize) -> MapFit {
         guard view.width > 0, view.height > 0 else { return MapFit(map: whole, in: CGSize(width: 1, height: 1)) }
         let base = max(view.width / playable.width, view.height / playable.height)
         let scale = base * zoom.clamped(to: minZoom(playable: playable, whole: whole, in: view)...Self.maxZoom)
-        // Keep the playable area covering the view where it can; where it
-        // can't, centre the board.
+        // Keep the board covering the view where it can; where it can't,
+        // centre it.
         func axis(_ c: CGFloat, _ span: CGFloat, _ lo: CGFloat, _ hi: CGFloat, _ mid: CGFloat) -> CGFloat {
             let half = span / 2 / scale
             return hi - lo >= 2 * half ? c.clamped(to: (lo + half)...(hi - half)) : mid
         }
         let c = centre ?? CGPoint(x: playable.midX, y: playable.midY)
         return MapFit(scale: scale,
-                      centre: CGPoint(x: axis(c.x, view.width, playable.minX, playable.maxX, whole.midX),
-                                      y: axis(c.y, view.height, playable.minY, playable.maxY, whole.midY)),
+                      centre: CGPoint(x: axis(c.x, view.width, whole.minX, whole.maxX, whole.midX),
+                                      y: axis(c.y, view.height, whole.minY, whole.maxY, whole.midY)),
                       in: view)
     }
 
@@ -115,7 +115,13 @@ public struct MapView: View {
     public init(model: GameModel) { self.model = model }
 
     var playable: CGRect { CGRect(origin: .zero, size: shapes.size) }
-    var whole: CGRect { model.art?.map?.bounds ?? playable.insetBy(dx: -20, dy: -20) }
+    /// The board out to the outer edge of its frame.
+    var whole: CGRect {
+        if let border = model.art?.border { return playable.insetBy(dx: -frameGap - border.width, dy: -frameGap - border.width) }
+        return model.art?.map?.bounds ?? playable.insetBy(dx: -20, dy: -20)
+    }
+    /// Map pixels between the regions and the frame.
+    private let frameGap: CGFloat = 6
 
     public var body: some View {
         GeometryReader { geo in
@@ -257,7 +263,13 @@ public struct MapView: View {
         if let board {
             let r = board.bounds
             let tl = fit.toView(r.origin)
-            ctx.draw(board.sprite.image, in: CGRect(x: tl.x, y: tl.y, width: r.width * fit.scale, height: r.height * fit.scale))
+            let border = model.art?.border
+            ctx.drawLayer { l in
+                // Inside the frame only: the knotwork replaces the printed edge.
+                if border != nil { l.clip(to: Path(playable.insetBy(dx: -frameGap, dy: -frameGap).applying(fit.transform))) }
+                l.draw(board.sprite.image, in: CGRect(x: tl.x, y: tl.y, width: r.width * fit.scale, height: r.height * fit.scale))
+            }
+            if let border { drawFrame(&ctx, border, fit: fit) }
         }
         for id in model.map.regionIDs {
             let path = shapes.paths[id]!.applying(fit.transform)
@@ -266,6 +278,37 @@ public struct MapView: View {
                 ctx.stroke(path, with: .color(Palette.border.opacity(0.7)), lineWidth: 0.8)
             }
             if !model.engine.script.isEnterable(id, in: model.state) { ctx.fill(path, with: .color(Palette.offLimits)) }
+        }
+    }
+
+    /// The knotwork band around the board, side by side clockwise from the
+    /// top. Each side is drawn as if it were the top: its corner, then the
+    /// edge tile repeated, stretched to a whole number of symmetric units
+    /// so it meets the next corner cleanly.
+    private func drawFrame(_ ctx: inout GraphicsContext, _ border: Art.Border, fit: MapFit) {
+        let outer = whole
+        let starts = [CGPoint(x: outer.minX, y: outer.minY), CGPoint(x: outer.maxX, y: outer.minY),
+                      CGPoint(x: outer.maxX, y: outer.maxY), CGPoint(x: outer.minX, y: outer.maxY)]
+        let c = border.corner.size.width, b = border.width
+        let tile = border.edge.size.width
+        for side in 0..<4 {
+            let length = side % 2 == 0 ? outer.width : outer.height
+            var l = ctx
+            l.concatenate(fit.transform)
+            l.translateBy(x: starts[side].x, y: starts[side].y)
+            l.rotate(by: .degrees(90 * Double(side)))
+            l.draw(border.corner.image, in: CGRect(x: 0, y: 0, width: c, height: c))
+            let span = length - 2 * c
+            guard span > 0 else { continue }
+            let units = max(1, (span / border.unit).rounded())
+            let w = tile * span / (units * border.unit)
+            l.clip(to: Path(CGRect(x: c, y: 0, width: span, height: b)))
+            var x = c
+            while x < c + span {
+                // A hair of overlap hides seams between tiles.
+                l.draw(border.edge.image, in: CGRect(x: x, y: 0, width: w + 0.5, height: b))
+                x += w
+            }
         }
     }
 

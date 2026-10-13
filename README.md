@@ -30,7 +30,10 @@ adaptation. Like the PDFs, it stays out of git; build it from `pdfs/`:
 
 That writes `art/`, which the Xcode project bundles (and `App/testflight.sh`
 requires). Boards are the key-map pages at 300 dpi with a 110 px frame
-margin, so map coordinates line up with `data/maps`. Tile figures,
+margin, so map coordinates line up with `data/maps`. The app draws its own
+knotwork frame round every board from a corner and an edge tile cut from
+Sorcerer's Crucible (`art/border/`), since the Tyrant's Lament key map is
+cut off on two sides. Tile figures,
 citadels and village icons come from the faction cards (rulebook pp. 24–26)
 at 600 dpi, with the tile colour recorded in `art/art.json`; map pieces draw
 the figure on a tile of that colour. The hand shows whole tiles as printed
