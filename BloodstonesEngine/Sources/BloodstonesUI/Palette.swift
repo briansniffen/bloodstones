@@ -121,3 +121,14 @@ struct PanelButtonStyle: ButtonStyle {
             .opacity(enabled ? (configuration.isPressed ? 0.7 : 1) : 0.4)
     }
 }
+
+/// A button lying on the map: parchment, like the army boards.
+struct BoardButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.callout.weight(.semibold))
+            .foregroundStyle(.black.opacity(0.75))
+            .background(BoardBackground())
+            .opacity(configuration.isPressed ? 0.7 : 1)
+    }
+}

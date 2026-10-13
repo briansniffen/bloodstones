@@ -101,9 +101,6 @@ public final class GameModel {
     public private(set) var stacks: [Stack] = []
     /// Which units each army letter was on last time, so letters stick.
     @ObservationIgnored private var armyLetters: [FactionID: [String: Set<Int>]] = [:]
-    /// Map space no piece can ever be in (for Mission 1, everything north of
-    /// the Hill Folk line), where the army boards float.
-    @ObservationIgnored public let boardArea: CGRect?
     /// A region being held down, shown expanded.
     public var peek: RegionID?
 
@@ -115,10 +112,6 @@ public final class GameModel {
         self.state = state
         describer = Describer(engine: engine, you: .horseLords)
         legal = engine.legalActions(in: state)
-        let used = Set(engine.map.regionIDs.filter {
-            engine.script.isEnterable($0, in: state) || !state.units(in: $0).isEmpty || !state.villages(in: $0).isEmpty
-        })
-        boardArea = shapes.freeRect(blocked: used)
         refreshStacks()
     }
 

@@ -1,30 +1,40 @@
 import BloodstonesEngine
 import SwiftUI
 
-/// The army boards, floating over the part of the map no piece can reach.
-/// Each holds an army's tiles, as big as the space allows; tapping one is
-/// tapping the army's region.
+/// The army boards, floating in a column over the map's corner, with a
+/// button to put them away. Each holds an army's tiles, as big as the
+/// space allows; tapping one is tapping the army's region.
 struct ArmyBoards: View {
     let model: GameModel
-    let fit: MapFit
+    /// The most room the boards may take.
+    let size: CGSize
+    @State private var open = true
 
     var body: some View {
         let armies = model.armyStacks
-        if let area = model.boardArea, !armies.isEmpty {
-            let tl = fit.toView(area.origin)
-            let rect = CGRect(x: tl.x, y: tl.y, width: area.width * fit.scale, height: area.height * fit.scale)
-                .insetBy(dx: 8, dy: 8)
-            let plan = BoardPlan.fit(armies.map(\.units.count), in: rect.size)
-            VStack(alignment: .leading, spacing: BoardPlan.gap) {
-                ForEach(Array(stride(from: 0, to: armies.count, by: plan.columns)), id: \.self) { i in
-                    HStack(alignment: .top, spacing: BoardPlan.gap) {
-                        ForEach(armies[i..<min(i + plan.columns, armies.count)]) {
-                            ArmyBoard(model: model, stack: $0, tileHeight: plan.tileHeight, width: plan.boardWidth)
+        if !armies.isEmpty {
+            VStack(alignment: .trailing, spacing: BoardPlan.gap) {
+                Button { withAnimation(.snappy) { open.toggle() } } label: {
+                    Label(open ? "Hide armies" : "Armies (\(armies.count))",
+                          systemImage: open ? "chevron.up" : "rectangle.stack")
+                        .padding(.horizontal, 12).padding(.vertical, 8)
+                }
+                .buttonStyle(BoardButtonStyle())
+                if open {
+                    let plan = BoardPlan.fit(armies.map(\.units.count),
+                                             in: CGSize(width: size.width, height: size.height - 50), maxTile: 36)
+                    VStack(alignment: .trailing, spacing: BoardPlan.gap) {
+                        ForEach(Array(stride(from: 0, to: armies.count, by: plan.columns)), id: \.self) { i in
+                            HStack(alignment: .top, spacing: BoardPlan.gap) {
+                                ForEach(armies[i..<min(i + plan.columns, armies.count)]) {
+                                    ArmyBoard(model: model, stack: $0, tileHeight: plan.tileHeight, width: plan.boardWidth)
+                                }
+                            }
                         }
                     }
+                    .transition(.move(edge: .top).combined(with: .opacity))
                 }
             }
-            .offset(x: rect.minX, y: rect.minY)
         }
     }
 }
@@ -50,8 +60,8 @@ struct BoardPlan: Equatable {
         return 2 * padding + header + CGFloat(rows) * (h * (1 + TileLook.thickness) + tileGap)
     }
 
-    static func fit(_ units: [Int], in size: CGSize) -> BoardPlan {
-        for h in stride(from: CGFloat(48), through: 16, by: -2) {
+    static func fit(_ units: [Int], in size: CGSize, maxTile: CGFloat = 48) -> BoardPlan {
+        for h in stride(from: maxTile, through: 16, by: -2) {
             for columns in 1...max(1, min(units.count, 4)) {
                 let width = (size.width - CGFloat(columns - 1) * gap) / CGFloat(columns)
                 // Tiles lie side by side on a board, as on the physical ones.

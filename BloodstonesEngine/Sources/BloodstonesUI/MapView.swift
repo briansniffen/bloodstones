@@ -46,11 +46,55 @@ struct MapFit {
                          y: (view.height - map.height * scale) / 2 - map.minY * scale)
     }
 
+    init(scale: CGFloat, centre: CGPoint, in view: CGSize) {
+        self.scale = scale
+        origin = CGPoint(x: view.width / 2 - centre.x * scale, y: view.height / 2 - centre.y * scale)
+    }
+
     func toView(_ p: CGPoint) -> CGPoint { CGPoint(x: origin.x + p.x * scale, y: origin.y + p.y * scale) }
     func toMap(_ p: CGPoint) -> CGPoint { CGPoint(x: (p.x - origin.x) / scale, y: (p.y - origin.y) / scale) }
     var transform: CGAffineTransform {
         CGAffineTransform(translationX: origin.x, y: origin.y).scaledBy(x: scale, y: scale)
     }
+}
+
+/// Where the map view is looking. Zoom 1 fills the view with the playable
+/// area (the printed tracks around it are shown as overlays instead); it
+/// can zoom out as far as the whole board and in to four times that.
+struct Camera: Equatable {
+    var zoom: CGFloat = 1
+    /// The map point at the middle of the view; nil for the middle of the map.
+    var centre: CGPoint?
+
+    static let maxZoom: CGFloat = 4
+
+    /// `playable` is the regions' extent, `whole` the board image's.
+    func fit(playable: CGRect, whole: CGRect, in view: CGSize) -> MapFit {
+        guard view.width > 0, view.height > 0 else { return MapFit(map: whole, in: CGSize(width: 1, height: 1)) }
+        let base = max(view.width / playable.width, view.height / playable.height)
+        let scale = base * zoom.clamped(to: minZoom(playable: playable, whole: whole, in: view)...Self.maxZoom)
+        // Keep the playable area covering the view where it can; where it
+        // can't, centre the board.
+        func axis(_ c: CGFloat, _ span: CGFloat, _ lo: CGFloat, _ hi: CGFloat, _ mid: CGFloat) -> CGFloat {
+            let half = span / 2 / scale
+            return hi - lo >= 2 * half ? c.clamped(to: (lo + half)...(hi - half)) : mid
+        }
+        let c = centre ?? CGPoint(x: playable.midX, y: playable.midY)
+        return MapFit(scale: scale,
+                      centre: CGPoint(x: axis(c.x, view.width, playable.minX, playable.maxX, whole.midX),
+                                      y: axis(c.y, view.height, playable.minY, playable.maxY, whole.midY)),
+                      in: view)
+    }
+
+    /// Far enough out to see the whole board.
+    func minZoom(playable: CGRect, whole: CGRect, in view: CGSize) -> CGFloat {
+        let base = max(view.width / playable.width, view.height / playable.height)
+        return min(1, min(view.width / whole.width, view.height / whole.height) / base)
+    }
+}
+
+extension Comparable {
+    func clamped(to r: ClosedRange<Self>) -> Self { min(max(self, r.lowerBound), r.upperBound) }
 }
 
 public struct MapView: View {
@@ -60,13 +104,22 @@ public struct MapView: View {
     /// into a hold (which peeks instead of tapping).
     @State private var press: CGPoint?
     @State private var holdTimer: Task<Void, Never>?
+    @State private var camera = Camera()
+    /// The camera when the current drag or pinch began, and the fit then.
+    @State private var dragStart: (camera: Camera, fit: MapFit)?
+    @State private var pinchStart: (camera: Camera, fit: MapFit)?
+    /// The current press has panned or pinched, so it isn't a tap.
+    @State private var moved = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init(model: GameModel) { self.model = model }
 
+    var playable: CGRect { CGRect(origin: .zero, size: shapes.size) }
+    var whole: CGRect { model.art?.map?.bounds ?? playable.insetBy(dx: -20, dy: -20) }
+
     public var body: some View {
         GeometryReader { geo in
-            let fit = MapFit(map: model.art?.map?.bounds ?? CGRect(origin: .zero, size: shapes.size), in: geo.size)
+            let fit = camera.fit(playable: playable, whole: whole, in: geo.size)
             let highlights = model.highlights()
             let glows = glowShapes(highlights)
             ZStack(alignment: .topLeading) {
@@ -83,8 +136,18 @@ public struct MapView: View {
                     draw(in: &ctx, fit: fit, highlights: highlights)
                 }
                 .contentShape(Rectangle())
-                .gesture(pressGesture(fit))
-                ArmyBoards(model: model, fit: fit)
+                .gesture(pressGesture(fit, in: geo.size))
+                .simultaneousGesture(pinchGesture(fit, in: geo.size))
+                // Floating over the map, fixed to the screen.
+                TracksView(model: model)
+                    .padding(10)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+                ArmyBoards(model: model, size: CGSize(width: min(340, geo.size.width * 0.42), height: geo.size.height - 90))
+                    .padding(10)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                zoomButtons(geo.size)
+                    .padding(10)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
                 if let r = model.peek, let c = shapes.centres[r] {
                     PeekView(model: model, region: r)
                         .fixedSize()
@@ -92,31 +155,82 @@ public struct MapView: View {
                         .allowsHitTesting(false)
                 }
             }
+            .clipped()
         }
         .background(Palette.border.opacity(0.85))
     }
 
-    /// Tap a region to act on it; hold to see everything in it.
-    private func pressGesture(_ fit: MapFit) -> some Gesture {
+    /// Tap a region to act on it; hold to see everything in it; drag to
+    /// move the map.
+    private func pressGesture(_ fit: MapFit, in size: CGSize) -> some Gesture {
         DragGesture(minimumDistance: 0, coordinateSpace: .local)
             .onChanged { v in
                 if press == nil {
                     press = v.startLocation
+                    dragStart = (camera, fit)
                     let r = target(at: v.startLocation, fit: fit)
                     holdTimer = Task { @MainActor in
                         try? await Task.sleep(for: .milliseconds(350))
-                        if !Task.isCancelled, r.map({ !model.state.units(in: $0).isEmpty }) == true { model.peek = r }
+                        if !Task.isCancelled, !moved, r.map({ !model.state.units(in: $0).isEmpty }) == true { model.peek = r }
                     }
                 }
-                if hypot(v.translation.width, v.translation.height) > 12 { holdTimer?.cancel() }
+                if hypot(v.translation.width, v.translation.height) > 12 {
+                    holdTimer?.cancel()
+                    if model.peek == nil { moved = true }
+                }
+                // Pan, unless peeking or pinching (the pinch moves the map then).
+                if moved, model.peek == nil, pinchStart == nil, let start = dragStart {
+                    camera = Camera(zoom: start.camera.zoom,
+                                    centre: start.fit.toMap(CGPoint(x: size.width / 2 - v.translation.width,
+                                                                    y: size.height / 2 - v.translation.height)))
+                }
             }
             .onEnded { v in
                 holdTimer?.cancel()
-                defer { press = nil }
+                defer { press = nil; dragStart = nil; moved = false }
                 if model.peek != nil { model.peek = nil; return }
-                guard hypot(v.translation.width, v.translation.height) <= 12 else { return }
+                guard !moved, hypot(v.translation.width, v.translation.height) <= 12 else { return }
                 if let r = target(at: v.startLocation, fit: fit) { model.tap(r) }
             }
+    }
+
+    /// Pinch to zoom about the fingers.
+    private func pinchGesture(_ fit: MapFit, in size: CGSize) -> some Gesture {
+        MagnifyGesture(minimumScaleDelta: 0.01)
+            .onChanged { v in
+                holdTimer?.cancel()
+                moved = true
+                if pinchStart == nil { pinchStart = (camera, fit) }
+                guard let start = pinchStart else { return }
+                setZoom(start.camera.zoom * v.magnification, keeping: v.startLocation, from: start.fit, in: size)
+            }
+            .onEnded { _ in pinchStart = nil }
+    }
+
+    /// Zoom so the map point under `anchor` (in `from`) stays put.
+    private func setZoom(_ zoom: CGFloat, keeping anchor: CGPoint, from: MapFit, in size: CGSize) {
+        let z = zoom.clamped(to: camera.minZoom(playable: playable, whole: whole, in: size)...Camera.maxZoom)
+        let p = from.toMap(anchor)
+        let scale = Camera(zoom: z).fit(playable: playable, whole: whole, in: size).scale
+        camera = Camera(zoom: z, centre: CGPoint(x: p.x - (anchor.x - size.width / 2) / scale,
+                                                 y: p.y - (anchor.y - size.height / 2) / scale))
+    }
+
+    private func zoomButtons(_ size: CGSize) -> some View {
+        let fit = camera.fit(playable: playable, whole: whole, in: size)
+        let mid = CGPoint(x: size.width / 2, y: size.height / 2)
+        return VStack(spacing: 8) {
+            Button { setZoom(camera.zoom * 1.5, keeping: mid, from: fit, in: size) } label: {
+                Image(systemName: "plus").frame(width: 44, height: 40)
+            }
+            Button { setZoom(camera.zoom / 1.5, keeping: mid, from: fit, in: size) } label: {
+                Image(systemName: "minus").frame(width: 44, height: 40)
+            }
+            Button { camera = Camera() } label: {
+                Image(systemName: "arrow.down.right.and.arrow.up.left").frame(width: 44, height: 40)
+            }
+        }
+        .buttonStyle(BoardButtonStyle())
     }
 
     /// The region a press is about: the one whose pieces are under the
