@@ -41,6 +41,40 @@ enum Palette {
         }
     }
 
+    /// The colour a highlighted region glows.
+    static func glow(_ h: Highlight) -> Color {
+        switch h {
+        case .selected: selected
+        case .move: Color(red: 0.25, green: 0.95, blue: 0.35)
+        case .buildSite, .village, .capture: Color(red: 0.25, green: 0.65, blue: 1.0)
+        case .battle: Color(red: 1.0, green: 0.2, blue: 0.12)
+        case .withdraw, .retreat: Color(red: 1.0, green: 0.62, blue: 0.1)
+        case .target: .white
+        }
+    }
+
+    /// Highlights that glow together as one area.
+    static func glowKind(_ h: Highlight) -> String {
+        switch h {
+        case .selected: "selected"
+        case .move: "move"
+        case .buildSite, .village, .capture: "site"
+        case .battle: "battle"
+        case .withdraw, .retreat: "away"
+        case .target: "target"
+        }
+    }
+
+    /// Moves light up many regions at once, so their glow is gentler; the
+    /// region you're acting on is strongest.
+    static func glowStrength(_ h: Highlight) -> Double {
+        switch h {
+        case .move: 0.7
+        case .selected, .target: 1.2
+        default: 1
+        }
+    }
+
     /// Short labels for unit chips on the map.
     static func short(_ t: UnitType) -> String {
         switch t {

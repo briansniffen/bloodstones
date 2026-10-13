@@ -60,6 +60,7 @@ public struct MapView: View {
     /// into a hold (which peeks instead of tapping).
     @State private var press: CGPoint?
     @State private var holdTimer: Task<Void, Never>?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init(model: GameModel) { self.model = model }
 
@@ -67,7 +68,17 @@ public struct MapView: View {
         GeometryReader { geo in
             let fit = MapFit(map: model.art?.map?.bounds ?? CGRect(origin: .zero, size: shapes.size), in: geo.size)
             let highlights = model.highlights()
+            let glows = glowShapes(highlights)
             ZStack(alignment: .topLeading) {
+                // The board, then the glow on highlighted regions (the only
+                // layer that animates), then numbers, costs and pieces.
+                Canvas { ctx, _ in drawBoard(&ctx, fit: fit) }
+                TimelineView(.animation(minimumInterval: 1.0 / 30, paused: highlights.isEmpty || reduceMotion)) { tl in
+                    Canvas { ctx, _ in
+                        drawGlow(&ctx, fit: fit, glows: glows, phase: reduceMotion ? 0.6 : breath(tl.date))
+                    }
+                }
+                .allowsHitTesting(false)
                 Canvas { ctx, _ in
                     draw(in: &ctx, fit: fit, highlights: highlights)
                 }
@@ -125,10 +136,10 @@ public struct MapView: View {
         CGPoint(x: min(max(p.x, 170), size.width - 170), y: max(p.y - 120, 110))
     }
 
-    private func draw(in ctx: inout GraphicsContext, fit: MapFit, highlights: [RegionID: Highlight]) {
-        let s = model.state
+    /// The board art (or plain terrain and borders), with regions out of
+    /// play darkened.
+    private func drawBoard(_ ctx: inout GraphicsContext, fit: MapFit) {
         let board = model.art?.map
-        // The board (or plain terrain), then highlights, then borders.
         if let board {
             let r = board.bounds
             let tl = fit.toView(r.origin)
@@ -136,16 +147,55 @@ public struct MapView: View {
         }
         for id in model.map.regionIDs {
             let path = shapes.paths[id]!.applying(fit.transform)
-            if board == nil { ctx.fill(path, with: .color(Palette.terrain(model.map.terrain(of: id)))) }
-            if !model.engine.script.isEnterable(id, in: s) { ctx.fill(path, with: .color(Palette.offLimits)) }
-            if let h = highlights[id] { ctx.fill(path, with: .color(Palette.highlight(h))) }
+            if board == nil {
+                ctx.fill(path, with: .color(Palette.terrain(model.map.terrain(of: id))))
+                ctx.stroke(path, with: .color(Palette.border.opacity(0.7)), lineWidth: 0.8)
+            }
+            if !model.engine.script.isEnterable(id, in: model.state) { ctx.fill(path, with: .color(Palette.offLimits)) }
         }
-        for id in model.map.regionIDs {
-            let path = shapes.paths[id]!.applying(fit.transform)
-            if board == nil { ctx.stroke(path, with: .color(Palette.border.opacity(0.7)), lineWidth: 0.8) }
-            if highlights[id] == .selected { ctx.stroke(path, with: .color(Palette.selected), lineWidth: 3) }
-            if highlights[id] == .target { ctx.stroke(path, with: .color(.white), lineWidth: 4) }
+    }
+
+    /// 0…1 and back, slowly: one breath every two seconds.
+    private func breath(_ date: Date) -> Double {
+        (sin(date.timeIntervalSinceReferenceDate * .pi) + 1) / 2
+    }
+
+    /// Highlighted regions merged by kind, in map coordinates: a move range
+    /// glows as one area, outlined once, not region by region. Region
+    /// outlines don't quite meet, so each is fattened a little first.
+    private func glowShapes(_ highlights: [RegionID: Highlight]) -> [(path: Path, h: Highlight)] {
+        let kinds = Dictionary(grouping: highlights, by: { Palette.glowKind($0.value) })
+        return kinds.keys.sorted().map { kind in
+            let group = kinds[kind]!
+            let union = group.map(\.key).sorted().reduce(nil as CGPath?) { acc, r in
+                let p = shapes.paths[r]!.cgPath
+                let fat = p.union(p.copy(strokingWithWidth: 4, lineCap: .round, lineJoin: .round, miterLimit: 2))
+                return acc?.union(fat) ?? fat
+            }
+            return (Path(union!), group[0].value)
         }
+    }
+
+    /// Highlighted areas glow: a soft aura spilling over the edge into the
+    /// neighbours, a light wash inside, and a crisp coloured edge. The aura
+    /// breathes with `phase`.
+    private func drawGlow(_ ctx: inout GraphicsContext, fit: MapFit, glows: [(path: Path, h: Highlight)], phase: Double) {
+        let lit = glows.map { (path: $0.path.applying(fit.transform), h: $0.h) }
+        ctx.drawLayer { l in
+            l.addFilter(.blur(radius: 6 + 4 * phase))
+            for (path, h) in lit {
+                let k = Palette.glowStrength(h)
+                l.stroke(path, with: .color(Palette.glow(h).opacity((0.55 + 0.35 * phase) * k)), lineWidth: 10 + 6 * phase)
+            }
+        }
+        for (path, h) in lit {
+            ctx.fill(path, with: .color(Palette.glow(h).opacity((0.14 + 0.08 * phase) * Palette.glowStrength(h))))
+            ctx.stroke(path, with: .color(Palette.glow(h).opacity(0.95)), lineWidth: h == .target || h == .selected ? 3 : 2)
+        }
+    }
+
+    private func draw(in ctx: inout GraphicsContext, fit: MapFit, highlights: [RegionID: Highlight]) {
+        let board = model.art?.map
         // Numbers (printed on the board art), costs and pieces.
         let chip = markSize(fit)
         for id in model.map.regionIDs {
